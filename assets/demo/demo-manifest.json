@@ -1,0 +1,10 @@
+{
+  "workbook": "literature-demo.xlsx",
+  "paper_sheet": "论文表",
+  "fieldguide_sheet": "字段说明",
+  "notes": [
+    "This demo workbook is bundled for local walkthroughs.",
+    "It is intentionally small so a user can inspect every generated artifact.",
+    "The field-guide sheet demonstrates that the skill depends on user-defined semantics rather than a hardcoded taxonomy."
+  ]
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "\u6587\u732e\u8868\u6574\u7406"
+  short_description: "\u6574\u7406\u8bba\u6587\u4e3b\u8868\u548c\u5b57\u6bb5\u8bf4\u660e\u9875\uff0c\u8865\u8bc1\u636e\u94fe\uff0c\u5e76\u56de\u586b\u81ea\u5b9a\u4e49\u5206\u7c7b\u5217\u3002"
+  default_prompt: "Use $literature-table-organizer to inspect a local xlsx or a Feishu spreadsheet, detect the paper sheet and field-guide sheet, collect paper evidence, update the workbook, and keep local traceability artifacts."
