@@ -2,6 +2,10 @@
 
 A reusable Codex skill for organizing literature spreadsheets with local evidence chains.
 
+中文说明请见 [README.zh-CN.md](README.zh-CN.md)。
+
+This repository keeps `README.md` as the English landing page and provides a separate Chinese README for readers who prefer Chinese documentation.
+
 This skill is designed for workflows where a user maintains a paper table and wants more than a one-time fill. It helps turn a spreadsheet into a traceable review workspace:
 
 - detect the main paper sheet and the field-guide sheet
