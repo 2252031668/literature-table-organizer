@@ -1,116 +1,151 @@
 ---
 name: literature-table-organizer
-description: "Organize a literature workbook that contains a paper sheet plus a field-guide sheet. Use when a user uploads a local xlsx file or shares a Feishu spreadsheet link and asks to verify papers, search full text, fill user-defined classification columns, create local evidence files, or maintain the columns `\u672c\u5730\u6587\u4ef6\u8def\u5f84`, `\u8bc1\u636e\u94fe\u8def\u5f84`, and `\u6838\u9a8c\u8b66\u544a/\u72b6\u6001`. The primary paper sheet must include `\u8bba\u6587\u5168\u540d` and may also include `\u8bba\u6587\u94fe\u63a5` and `\u6458\u8981`; another worksheet must define field semantics with columns matching `\u5b57\u6bb5`, `\u5efa\u8bae\u586b\u5199\u65b9\u5f0f`, and `\u63a8\u8350\u53d6\u503c/\u8bf4\u660e`."
+description: "Organize a literature workbook into either a standard evidence-backed review table or a survey-oriented classification and writing-support workspace. Use when a user provides a local xlsx file or Feishu spreadsheet and wants paper verification, field backfill, survey taxonomy alignment, writing-outline support, evidence files, workbook path columns, or incremental paper expansion."
 ---
 
 # Literature Table Organizer
 
-Use this skill to turn a literature spreadsheet into a traceable review workspace instead of a one-off table fill.
+Use this skill in one of two modes:
+
+1. Standard mode
+   For normal literature-table verification, evidence collection, and workbook backfill.
+2. Survey-oriented mode
+   For preparing a new survey paper from a topic plus a literature workbook, including related-survey analysis, outline drafting, field-manual upgrade, pilot calibration, writing-support columns, and iterative paper expansion.
 
 Start with `references/workflow.md` before doing substantial work.
 
-## Core workflow
+## Mode selection
 
-1. Detect the input source.
-   - Local `xlsx`
-   - Feishu spreadsheet URL
-2. Run `scripts/detect_workbook_structure.py`.
-   - Find 1-3 candidate paper sheets
-   - Find the field-guide sheet by semantic headers
-   - Detect whether the system columns already exist
-3. Pause when the structure is ambiguous.
-   - More than one plausible primary sheet
-   - Missing field-guide sheet
-   - Field-guide semantics are incomplete
-   - User-defined columns remain unclear after reading the guide
-4. Prepare the local workspace with `scripts/prepare_local_workspace.py`.
-   - Local workbook: ask whether to edit a copy or the original
-   - Feishu workbook: export locally and edit the downloaded file
-   - Create sibling artifact folders for papers, evidence, and snapshots
-5. Collect paper evidence.
-   - Use `scripts/fetch_paper_sources.py` to resolve or download a PDF first
-   - If static fetching fails, use the Browser skill as the standard dynamic-page fallback
-   - Only fall back to local Markdown capture after PDF and fulltext-page attempts
-6. Build evidence artifacts with `scripts/build_evidence_files.py`.
-   - Keep `paper.pdf`, `source.md`, or `review.md` depending on the source type
-   - Generate `paper.txt` from PDFs
-   - Generate one evidence Markdown file per row
-7. Write workbook updates with `scripts/update_workbook.py`.
-   - Reuse existing system columns when present
-   - Otherwise append the local-file, evidence-path, and warning/status columns
-   - Write clickable local hyperlinks for path columns in local xlsx workbooks
-   - Update user-defined classification fields and traceability columns
-8. If the source was Feishu, only sync back after explicit user confirmation.
-   - Use `scripts/feishu_sync.py`
-   - Default to preview mode first
+Use survey-oriented mode when any of the following is true:
 
-## Required behavior
+- the user says the workbook is for writing a survey or review article
+- the user provides a survey topic
+- the user asks for breakthrough-point analysis, writing outline, writing-section mapping, or writing-ready evidence
 
-- Treat the field-guide worksheet as the source of truth for user-defined columns.
-- Do not guess when the guide is missing or semantically unclear.
-- For local workbooks, ask whether to edit a copy or the original each time.
-- For Feishu workbooks, export locally first and do not auto-sync after editing.
-- If a paper link is missing, search by title and fill the link only when the match is reliable.
-- If evidence is weak or conflicting, keep the old cell value and write the reason into the warning/status column.
-- Always keep local traceability artifacts beside the workbook in `<workbook_stem>_artifacts/`.
-- Prefer relative paths inside workbook cells.
-- Evidence priority is mandatory:
-  1. `paper.pdf` or other locally saved full paper text
-  2. official readable fulltext webpage
-  3. project page / OpenReview / repository documentation with enough detail to support the target fields
-  4. high-quality secondary review or interpretation page
-  5. abstract-only page
-- Static HTTP fetching is only the first attempt.
-  - When static parsing cannot reach the PDF or fulltext, Browser must be treated as the standard next step rather than an optional extra.
-- Only these source states allow full workbook backfill by default:
-  - `pdf_download`
-  - `pdf_via_browser`
-  - `fulltext_web`
-  - `secondary_review`
-- These source states do not allow full backfill by default:
-  - `abstract_only`
-  - `unresolved`
-  - `mismatch_or_unverifiable`
-- If a title and resolved source appear mismatched, stop automatic classification for that row and record the mismatch.
+Otherwise use standard mode.
+
+## Standard mode
+
+Standard mode keeps the existing behavior:
+
+1. Detect workbook structure.
+2. Prepare the local editable workspace.
+3. Fetch paper evidence with PDF/fulltext-first policy.
+4. Build evidence files.
+5. Write workbook updates and local hyperlinks.
+6. Preview Feishu sync only when needed.
+
+## Survey-oriented mode
+
+Survey-oriented mode adds mandatory front-loaded stages before batch classification:
+
+1. Topic and project alignment
+2. Related-survey and representative-paper reading
+3. Breakthrough-point analysis
+4. Outline drafting and discussion
+5. Field-manual upgrade
+6. Pilot calibration on 5-10 representative papers
+7. Batch processing
+8. Ongoing paper expansion and reprocessing
+
+Do not skip directly to full-table processing in survey-oriented mode.
+
+## Required survey-oriented outputs
+
+Create these project files under `<workbook_stem>_artifacts/project/`:
+
+- `project-brief.md`
+- `related-survey-analysis.md`
+- `outline.md`
+- `field-manual.md`
+- `pilot-calibration.md`
+- `paper-expansion-log.md`
+
+`outline.md` is the central writing scaffold.
+
+## Workbook behavior
+
+Always maintain:
+
+- `本地文件路径`
+- `证据链路径`
+- `核验警告/状态`
+
+In survey-oriented mode also maintain:
+
+- `写作引用章节`
+- `引用论据`
+
+For local `.xlsx` workbooks, keep relative path text while also writing clickable local hyperlinks.
+
+## Field-guide policy
+
+Treat the workbook field-guide sheet as a lightweight input, not necessarily the final classification protocol.
+
+In survey-oriented mode:
+
+- a simple three-column guide is considered legacy input
+- the skill must upgrade it into `field-manual.md`
+- the user must confirm the upgraded field manual before batch classification
+
+Do not treat a weak field-guide sheet as sufficient for high-confidence survey classification.
+
+## Classification protocol
+
+Survey-oriented outputs must go beyond “value filling”.
+
+For major classification fields, the evidence output should record:
+
+- decision question
+- final value
+- key evidence segments
+- causal reasoning chain
+- exclusion reasoning
+- evidence sufficiency
+
+Detailed reasoning belongs primarily in evidence Markdown and project files, not only in workbook cells.
+
+## Paper expansion
+
+Survey-oriented mode must support incremental paper expansion:
+
+1. search for additional papers on a requested aspect
+2. present candidate papers and rationale
+3. wait for user confirmation
+4. append confirmed papers as new workbook rows
+5. run the same evidence and writing-support workflow on those rows
+
+## Evidence order
+
+Evidence priority is mandatory:
+
+1. `paper.pdf` or other local full paper text
+2. official readable fulltext webpage
+3. project page / OpenReview / repository documentation with enough detail
+4. high-quality secondary review or interpretation page
+5. abstract-only page
+
+Abstract-only pages are never the default basis for complete survey-oriented backfill.
 
 ## Files to use
 
 - `references/workflow.md`
-  - End-to-end workflow, pause conditions, warning policy
 - `references/fieldguide-contract.md`
-  - How to identify the field-guide worksheet and interpret it
 - `references/evidence-template.md`
-  - Expected evidence Markdown structure
-- `references/feishu-sync.md`
-  - Sync contract and limitations
 - `references/usage-demo.md`
-  - Shareable walkthrough and demo scenarios
 - `scripts/detect_workbook_structure.py`
-  - Workbook structure detection
 - `scripts/prepare_local_workspace.py`
-  - Local copy/export and artifact directory preparation
+- `scripts/survey_mode_bootstrap.py`
+- `scripts/upgrade_field_manual.py`
 - `scripts/fetch_paper_sources.py`
-  - Source resolution and download
 - `scripts/build_evidence_files.py`
-  - Evidence asset and Markdown generation
 - `scripts/update_workbook.py`
-  - Workbook writes by header name
-- `scripts/feishu_sync.py`
-  - Preview or execute Feishu sync
+- `scripts/append_paper_rows.py`
+- `scripts/rebuild_local_workbook.py`
 - `scripts/quick_validate.py`
-  - Validate the skill and compile scripts
-- `scripts/create_demo_workbook.py`
-  - Regenerate the bundled demo workbook if needed
-
-## Demo assets
-
-- `assets/demo/literature-demo.xlsx`
-  - Minimal local workbook demo with a paper sheet and a field-guide sheet
-- `assets/demo/demo-manifest.json`
-  - What the demo workbook is intended to show
 
 ## Notes
 
-- Keep the reasoning about classification inside the evidence Markdown, not only in the sheet.
-- When syncing back to Feishu, preview first unless the user has already confirmed the final push.
-- For local xlsx workbooks, path cells should remain human-readable relative paths while also behaving as clickable hyperlinks.
+- In survey-oriented mode, do not guess the survey taxonomy before reading related surveys and discussing the outline.
+- Do not enter batch processing until pilot calibration is completed.
+- Writing-support fields should be concrete enough to support drafting, not generic summaries.
