@@ -8,6 +8,7 @@ Turn a literature workbook into a verifiable review package:
 - preserve one local source asset per paper when possible
 - generate one evidence Markdown file per paper row
 - write relative paths back into the workbook
+- make local path cells in xlsx workbooks clickable
 
 ## Input contract
 
@@ -37,10 +38,19 @@ The workbook must have:
 Prefer sources in this order:
 
 1. PDF or full paper text
-2. official paper page
+2. official readable fulltext webpage
 3. project page
 4. repository documentation
-5. other reliable web preview
+5. high-quality secondary review or interpretation page
+6. abstract-only page
+
+Treat this ordering as a hard gate for automation:
+
+- first try deterministic PDF resolution
+- then try static fulltext-page capture
+- then try Browser-based dynamic fetching
+- only after those fail should the workflow consider a secondary review page
+- abstract-only pages are a last-resort record, not a default full-backfill source
 
 ## Missing-link policy
 
@@ -65,8 +75,28 @@ Useful warning strings include:
 
 - `链接缺失，按标题检索`
 - `标题-链接疑似错配`
-- `未获得全文，基于网页证据`
+- `未获全文PDF，基于全文网页证据`
+- `基于二手解读证据`
+- `仅获摘要，不建议完整回填`
 - `证据不足，结论待确认`
+- `本地路径目标缺失`
+
+Recommended normalized source statuses:
+
+- `pdf_download`
+- `pdf_via_browser`
+- `fulltext_web`
+- `secondary_review`
+- `abstract_only`
+- `unresolved`
+- `mismatch_or_unverifiable`
+
+Backfill policy by status:
+
+- `pdf_download`, `pdf_via_browser`, `fulltext_web`: full backfill allowed
+- `secondary_review`: full backfill allowed, but mark it as secondary evidence in the evidence Markdown
+- `abstract_only`: do not fully backfill by default; preserve old values or only write paths and warning
+- `unresolved`, `mismatch_or_unverifiable`: warning-only unless the user explicitly overrides
 
 ## Pause conditions
 
@@ -85,5 +115,7 @@ Place artifacts beside the editable workbook:
 - `<workbook_stem>_artifacts/papers/`
 - `<workbook_stem>_artifacts/evidence/`
 - `<workbook_stem>_artifacts/snapshots/`
+- `<workbook_stem>_artifacts/manifest.json`
 
 Use relative paths when writing the local-file and evidence-path columns back into the workbook.
+For local xlsx workbooks, also write Excel hyperlinks so the path cells can be clicked to open the target file.

@@ -28,15 +28,17 @@ Start with `references/workflow.md` before doing substantial work.
    - Feishu workbook: export locally and edit the downloaded file
    - Create sibling artifact folders for papers, evidence, and snapshots
 5. Collect paper evidence.
-   - Use `scripts/fetch_paper_sources.py` to resolve or download a PDF when possible
-   - Fall back to a local Markdown capture for reliable web previews
+   - Use `scripts/fetch_paper_sources.py` to resolve or download a PDF first
+   - If static fetching fails, use the Browser skill as the standard dynamic-page fallback
+   - Only fall back to local Markdown capture after PDF and fulltext-page attempts
 6. Build evidence artifacts with `scripts/build_evidence_files.py`.
-   - Keep `paper.pdf` or `source.md`
+   - Keep `paper.pdf`, `source.md`, or `review.md` depending on the source type
    - Generate `paper.txt` from PDFs
    - Generate one evidence Markdown file per row
 7. Write workbook updates with `scripts/update_workbook.py`.
    - Reuse existing system columns when present
    - Otherwise append the local-file, evidence-path, and warning/status columns
+   - Write clickable local hyperlinks for path columns in local xlsx workbooks
    - Update user-defined classification fields and traceability columns
 8. If the source was Feishu, only sync back after explicit user confirmation.
    - Use `scripts/feishu_sync.py`
@@ -52,6 +54,24 @@ Start with `references/workflow.md` before doing substantial work.
 - If evidence is weak or conflicting, keep the old cell value and write the reason into the warning/status column.
 - Always keep local traceability artifacts beside the workbook in `<workbook_stem>_artifacts/`.
 - Prefer relative paths inside workbook cells.
+- Evidence priority is mandatory:
+  1. `paper.pdf` or other locally saved full paper text
+  2. official readable fulltext webpage
+  3. project page / OpenReview / repository documentation with enough detail to support the target fields
+  4. high-quality secondary review or interpretation page
+  5. abstract-only page
+- Static HTTP fetching is only the first attempt.
+  - When static parsing cannot reach the PDF or fulltext, Browser must be treated as the standard next step rather than an optional extra.
+- Only these source states allow full workbook backfill by default:
+  - `pdf_download`
+  - `pdf_via_browser`
+  - `fulltext_web`
+  - `secondary_review`
+- These source states do not allow full backfill by default:
+  - `abstract_only`
+  - `unresolved`
+  - `mismatch_or_unverifiable`
+- If a title and resolved source appear mismatched, stop automatic classification for that row and record the mismatch.
 
 ## Files to use
 
@@ -93,3 +113,4 @@ Start with `references/workflow.md` before doing substantial work.
 
 - Keep the reasoning about classification inside the evidence Markdown, not only in the sheet.
 - When syncing back to Feishu, preview first unless the user has already confirmed the final push.
+- For local xlsx workbooks, path cells should remain human-readable relative paths while also behaving as clickable hyperlinks.

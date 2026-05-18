@@ -7,11 +7,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from common import ensure_dir, resolve_feishu_sheet_token, run_command
-
-
-def build_artifact_root(workbook_path: Path) -> Path:
-    return workbook_path.parent / f"{workbook_path.stem}_artifacts"
+from common import build_artifact_root, ensure_dir, manifest_path_for_workbook, resolve_feishu_sheet_token, run_command
 
 
 def ensure_workspace_dirs(workbook_path: Path) -> dict[str, str]:
@@ -19,11 +15,15 @@ def ensure_workspace_dirs(workbook_path: Path) -> dict[str, str]:
     papers_dir = ensure_dir(artifact_root / "papers")
     evidence_dir = ensure_dir(artifact_root / "evidence")
     snapshots_dir = ensure_dir(artifact_root / "snapshots")
+    manifest_path = manifest_path_for_workbook(workbook_path)
+    if not manifest_path.exists():
+        manifest_path.write_text("[]\n", encoding="utf-8")
     return {
         "artifact_root": str(artifact_root),
         "papers_dir": str(papers_dir),
         "evidence_dir": str(evidence_dir),
         "snapshots_dir": str(snapshots_dir),
+        "manifest_path": str(manifest_path),
     }
 
 

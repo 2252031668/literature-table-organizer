@@ -83,6 +83,25 @@ def main() -> None:
             "",
         ]
     )
+    paper_ws.append(
+        [
+            "Large Language Models for Orchestrating Bimanual Robots (LABOR)",
+            "https://arxiv.org/abs/2404.02018",
+            "An LLM-based orchestration paper for long-horizon bimanual manipulation that is useful for testing webpage fallback behavior.",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+        ]
+    )
 
     guide_ws = wb.create_sheet("\u5b57\u6bb5\u8bf4\u660e")
     guide_ws.append([FIELD_HEADER, FIELD_GUIDANCE_HEADER, FIELD_VALUE_HEADER])

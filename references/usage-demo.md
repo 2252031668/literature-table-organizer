@@ -24,6 +24,7 @@ It contains:
    - evidence-path
    - warning/status
 7. Open the evidence Markdown files and confirm each conclusion points to a source segment.
+8. Click the `本地文件路径` and `证据链路径` cells in Excel and confirm they open the target file.
 
 ## Demo scenario 2: Feishu workbook
 
@@ -39,15 +40,18 @@ It contains:
 - the generated `<workbook_stem>_artifacts/` folders
 - one paper asset folder
 - one evidence Markdown file
+- the manifest file
 - the updated workbook cells for:
   - user-defined classifications
   - local-file path
   - evidence-path
   - warning/status
+- clickable path cells in the local xlsx workbook
 
 ## Suggested talking points
 
 - The skill does not hardcode one research taxonomy.
 - The field-guide worksheet tells the agent how to interpret user-defined columns.
 - The evidence Markdown is the traceability layer.
+- Browser fallback is part of the standard workflow when static fetching cannot reach the real paper asset.
 - Feishu editing is intentionally staged through a local workbook first.
