@@ -10,7 +10,7 @@ Use this skill in one of two modes:
 1. Standard mode
    For normal literature-table verification, evidence collection, and workbook backfill.
 2. Survey-oriented mode
-   For preparing a new survey paper from a topic plus a literature workbook, including related-survey analysis, outline drafting, field-manual upgrade, pilot calibration, writing-support columns, and iterative paper expansion.
+   For preparing a new survey paper from `topic + xlsx + optional draft source`, including related-survey analysis, outline drafting, field-manual upgrade, pilot calibration, writing-support columns, Browser-enforced fallback, and iterative paper expansion.
 
 Start with `references/workflow.md` before doing substantial work.
 
@@ -37,15 +37,19 @@ Standard mode keeps the existing behavior:
 
 ## Survey-oriented mode
 
-Survey-oriented mode adds mandatory front-loaded stages before batch classification:
+Survey-oriented mode is now driven through one orchestration entry:
+
+- `scripts/run_survey_workflow.py`
+
+Required survey flow:
 
 1. Topic and project alignment
 2. Related-survey and representative-paper reading
 3. Breakthrough-point analysis
 4. Outline drafting and discussion
-5. Field-manual upgrade
+5. Field-manual upgrade and field-gap analysis
 6. Pilot calibration on 5-10 representative papers
-7. Batch processing
+7. Only after field-manual confirmation and pilot confirmation, batch processing
 8. Ongoing paper expansion and reprocessing
 
 Do not skip directly to full-table processing in survey-oriented mode.
@@ -58,8 +62,10 @@ Create these project files under `<workbook_stem>_artifacts/project/`:
 - `related-survey-analysis.md`
 - `outline.md`
 - `field-manual.md`
+- `field-gap-analysis.md`
 - `pilot-calibration.md`
 - `paper-expansion-log.md`
+- `workflow-state.json`
 
 `outline.md` is the central writing scaffold.
 
@@ -86,13 +92,14 @@ In survey-oriented mode:
 
 - a simple three-column guide is considered legacy input
 - the skill must upgrade it into `field-manual.md`
-- the user must confirm the upgraded field manual before batch classification
+- `field-manual.md` is the authoritative decision layer
+- batch processing is blocked until the field manual is confirmed
 
 Do not treat a weak field-guide sheet as sufficient for high-confidence survey classification.
 
 ## Classification protocol
 
-Survey-oriented outputs must go beyond “value filling”.
+Survey-oriented outputs must go beyond value filling.
 
 For major classification fields, the evidence output should record:
 
@@ -102,8 +109,29 @@ For major classification fields, the evidence output should record:
 - causal reasoning chain
 - exclusion reasoning
 - evidence sufficiency
+- writing section
+- writing argument when evidence is strong enough
 
 Detailed reasoning belongs primarily in evidence Markdown and project files, not only in workbook cells.
+
+## Browser fallback rule
+
+Browser is part of the formal fetch chain, not an optional suggestion.
+
+- Static success may produce:
+  - `pdf_download`
+  - `fulltext_web`
+  - `secondary_review`
+  - `abstract_only`
+- Static failure that still looks recoverable must produce:
+  - `browser_pending`
+- After Browser capture is completed, the result should be finalized into:
+  - `pdf_via_browser`
+  - `fulltext_web`
+  - `secondary_review`
+  - `mismatch_or_unverifiable`
+
+The agent using this skill must treat `browser_pending` as an immediate action item and resume the same evidence pipeline after capture.
 
 ## Paper expansion
 
@@ -135,17 +163,23 @@ Abstract-only pages are never the default basis for complete survey-oriented bac
 - `references/usage-demo.md`
 - `scripts/detect_workbook_structure.py`
 - `scripts/prepare_local_workspace.py`
+- `scripts/run_survey_workflow.py`
 - `scripts/survey_mode_bootstrap.py`
 - `scripts/upgrade_field_manual.py`
+- `scripts/prepare_pilot_set.py`
 - `scripts/fetch_paper_sources.py`
+- `scripts/finalize_browser_capture.py`
 - `scripts/build_evidence_files.py`
 - `scripts/update_workbook.py`
 - `scripts/append_paper_rows.py`
+- `scripts/plan_paper_expansion.py`
+- `scripts/reset_survey_outputs.py`
 - `scripts/rebuild_local_workbook.py`
 - `scripts/quick_validate.py`
 
 ## Notes
 
 - In survey-oriented mode, do not guess the survey taxonomy before reading related surveys and discussing the outline.
-- Do not enter batch processing until pilot calibration is completed.
+- Do not enter batch processing until both the field manual and pilot are confirmed.
 - Writing-support fields should be concrete enough to support drafting, not generic summaries.
+- If Browser capture is still pending, treat that row as blocked rather than silently degrading it into normal batch output.

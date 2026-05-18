@@ -9,6 +9,7 @@ It demonstrates:
 - standard literature-table organization
 - survey-oriented writing support
 - lightweight guide input that can be upgraded into a field manual
+- orchestration through a single survey workflow entry
 
 ## Demo scenario 1: standard mode
 
@@ -26,21 +27,36 @@ It demonstrates:
 
 ## Demo scenario 2: survey-oriented mode
 
-1. Start from the same workbook, but also provide a survey topic.
-2. Run survey bootstrap and create the project files under `<workbook_stem>_artifacts/project/`.
-3. Draft `outline.md` and compare it with the current workbook fields.
-4. Upgrade the lightweight guide into `field-manual.md`.
-5. Use 5-10 representative rows for pilot calibration.
-6. Fill `写作引用章节` and `引用论据` for sample rows.
-7. Confirm that evidence Markdown now contains decision-chain sections.
+1. Start from the same workbook and provide a survey topic.
+2. Optionally provide a draft source.
+3. Run `run_survey_workflow.py --phase bootstrap`.
+4. Inspect:
+   - `project-brief.md`
+   - `related-survey-analysis.md`
+   - `outline.md`
+   - `field-gap-analysis.md`
+5. Run `run_survey_workflow.py --phase manual`.
+6. Confirm the field manual and mark it confirmed.
+7. Run `run_survey_workflow.py --phase pilot`.
+8. Confirm the pilot after recording rule-learning notes.
+9. Only then run `run_survey_workflow.py --phase batch`.
 
-## Demo scenario 3: incremental paper expansion
+## Demo scenario 3: Browser fallback
+
+1. Pick a row whose static fetch does not reach the real paper asset.
+2. Confirm that the row enters `browser_pending`.
+3. Use Browser to retrieve `paper.pdf`, `source.md`, or `review.md`.
+4. Finalize the capture and resume the batch workflow.
+5. Confirm that the row now produces evidence and workbook output instead of staying pending.
+
+## Demo scenario 4: incremental paper expansion
 
 1. Identify a missing aspect from the outline.
-2. Search for candidate papers.
-3. Confirm which ones should be added.
+2. Run candidate planning for that aspect.
+3. Confirm which papers should be added.
 4. Append them as new workbook rows.
 5. Process those new rows with the same evidence and writing-support workflow.
+6. Record the addition in `paper-expansion-log.md`.
 
 ## What to show when sharing the skill
 
@@ -48,7 +64,7 @@ It demonstrates:
 - project-level files in survey-oriented mode
 - one paper asset folder
 - one evidence Markdown file with decision-chain content
-- manifest and project bootstrap files
+- manifest and workflow-state files
 - updated workbook cells for:
   - classification fields
   - writing-support fields
@@ -59,7 +75,8 @@ It demonstrates:
 ## Suggested talking points
 
 - The skill now supports both standard and survey-oriented workflows.
-- Survey-oriented mode does not go straight to batch classification.
+- Survey-oriented mode uses one orchestration entry instead of ad hoc manual sequencing.
 - A weak guide sheet can be upgraded into a stronger field manual.
+- Browser fallback is a formal stage in the fetch chain, not a side suggestion.
+- Pilot calibration and field-manual confirmation are hard gates before batch processing.
 - Evidence Markdown is both a traceability layer and a writing-support layer.
-- Browser fallback remains part of the fetch chain when static fetching cannot reach the real paper asset.

@@ -14,7 +14,7 @@ The workbook may contain a lightweight guide sheet with headers that can be mapp
 - fill guidance
 - recommended values or notes
 
-This is still acceptable as an input format.
+This is acceptable only as an input format.
 
 ### Upgraded field manual
 
@@ -44,11 +44,15 @@ The upgraded field manual should express, for each field:
 - negative or confusing cases
 - required evidence
 - conservative fallback rule when evidence is insufficient
+- neighboring-category exclusion rule
+- writing use note
 
 ## Interpretation rules
 
 - Treat the workbook field-guide sheet as a lightweight source, not necessarily the final classification protocol.
 - Treat the field manual as the authoritative decision layer in survey-oriented mode.
+- Keep the original guide sheet as legacy input, but drive batch decisions from `field-manual.md`.
+- Use `field-gap-analysis.md` to record what the outline needs beyond the legacy guide.
 - If the guide remains too weak to support stable classification, stop batch processing and discuss with the user.
 
 ## Required pause behavior
@@ -60,3 +64,4 @@ Stop and discuss when:
 - multiple guide candidates conflict with each other
 - a target field matters for the survey outline but has no usable guide entry
 - the guide lacks stable decision questions or boundary rules for major taxonomy fields
+- the field manual status is not yet confirmed

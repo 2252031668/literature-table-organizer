@@ -8,9 +8,12 @@ import shutil
 import subprocess
 import sys
 import unicodedata
+import zipfile
+from html import unescape
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+from xml.etree import ElementTree as ET
 
 
 PAPER_TITLE_HEADER = "\u8bba\u6587\u5168\u540d"
@@ -26,6 +29,12 @@ WRITING_SECTION_HEADER = "\u5199\u4f5c\u5f15\u7528\u7ae0\u8282"
 WRITING_EVIDENCE_HEADER = "\u5f15\u7528\u8bba\u636e"
 PROJECT_MODE_SURVEY = "survey_oriented"
 PROJECT_MODE_STANDARD = "standard"
+FIELD_MANUAL_STATUS_DRAFT = "draft"
+FIELD_MANUAL_STATUS_NEEDS_CONFIRMATION = "needs_user_confirmation"
+FIELD_MANUAL_STATUS_CONFIRMED = "confirmed"
+PILOT_STATUS_DRAFT = "draft"
+PILOT_STATUS_READY = "ready"
+PILOT_STATUS_CONFIRMED = "confirmed"
 CLASSIFICATION_HEADERS = [
     "\u8303\u5f0f\u6620\u5c04",
     "\u8303\u5f0f\u5c0f\u7c7b",
@@ -48,6 +57,7 @@ PROJECT_ARTIFACT_FILES = {
     "survey_analysis": "related-survey-analysis.md",
     "outline": "outline.md",
     "field_manual": "field-manual.md",
+    "field_gap_analysis": "field-gap-analysis.md",
     "pilot": "pilot-calibration.md",
     "expansion_log": "paper-expansion-log.md",
 }
@@ -57,6 +67,7 @@ STATUS_PDF_VIA_BROWSER = "pdf_via_browser"
 STATUS_FULLTEXT_WEB = "fulltext_web"
 STATUS_SECONDARY_REVIEW = "secondary_review"
 STATUS_ABSTRACT_ONLY = "abstract_only"
+STATUS_BROWSER_PENDING = "browser_pending"
 STATUS_UNRESOLVED = "unresolved"
 STATUS_MISMATCH = "mismatch_or_unverifiable"
 
@@ -70,6 +81,7 @@ SECONDARY_SOURCE_STATUSES = {
 }
 LOW_CONFIDENCE_SOURCE_STATUSES = {
     STATUS_ABSTRACT_ONLY,
+    STATUS_BROWSER_PENDING,
     STATUS_UNRESOLVED,
     STATUS_MISMATCH,
 }
@@ -78,6 +90,7 @@ WARNING_MISSING_LINK = "\u94fe\u63a5\u7f3a\u5931\uff0c\u6309\u6807\u9898\u68c0\u
 WARNING_WEB_ONLY = "\u672a\u83b7\u5168\u6587PDF\uff0c\u57fa\u4e8e\u5168\u6587\u7f51\u9875\u8bc1\u636e"
 WARNING_SECONDARY = "\u57fa\u4e8e\u4e8c\u624b\u89e3\u8bfb\u8bc1\u636e"
 WARNING_ABSTRACT_ONLY = "\u4ec5\u83b7\u6458\u8981\uff0c\u4e0d\u5efa\u8bae\u5b8c\u6574\u56de\u586b"
+WARNING_BROWSER_PENDING = "\u9700\u8981Browser\u52a8\u6001\u6293\u53d6\uff0c\u6682\u4e0d\u8fdb\u5165\u5b8c\u6574\u56de\u586b"
 WARNING_INSUFFICIENT = "\u8bc1\u636e\u4e0d\u8db3\uff0c\u7ed3\u8bba\u5f85\u786e\u8ba4"
 WARNING_MISMATCH = "\u6807\u9898-\u94fe\u63a5\u7591\u4f3c\u9519\u914d"
 WARNING_MISSING_TARGET = "\u672c\u5730\u8def\u5f84\u76ee\u6807\u7f3a\u5931"
@@ -88,6 +101,7 @@ WARNING_BY_STATUS = {
     STATUS_FULLTEXT_WEB: WARNING_WEB_ONLY,
     STATUS_SECONDARY_REVIEW: WARNING_SECONDARY,
     STATUS_ABSTRACT_ONLY: WARNING_ABSTRACT_ONLY,
+    STATUS_BROWSER_PENDING: WARNING_BROWSER_PENDING,
     STATUS_UNRESOLVED: WARNING_INSUFFICIENT,
     STATUS_MISMATCH: WARNING_MISMATCH,
 }
@@ -98,6 +112,7 @@ SOURCE_KIND_BY_STATUS = {
     STATUS_FULLTEXT_WEB: "primary_fulltext_web",
     STATUS_SECONDARY_REVIEW: "secondary_review",
     STATUS_ABSTRACT_ONLY: "abstract_only",
+    STATUS_BROWSER_PENDING: "browser_pending",
     STATUS_UNRESOLVED: "unresolved",
     STATUS_MISMATCH: "mismatch_or_unverifiable",
 }
@@ -108,8 +123,20 @@ EVIDENCE_LEVEL_BY_STATUS = {
     STATUS_FULLTEXT_WEB: "primary_fulltext_web",
     STATUS_SECONDARY_REVIEW: "secondary_review",
     STATUS_ABSTRACT_ONLY: "abstract_only",
+    STATUS_BROWSER_PENDING: "browser_pending",
     STATUS_UNRESOLVED: "unresolved",
     STATUS_MISMATCH: "mismatch_or_unverifiable",
+}
+
+EVIDENCE_SUFFICIENCY_BY_STATUS = {
+    STATUS_PDF_DOWNLOAD: "strong",
+    STATUS_PDF_VIA_BROWSER: "strong",
+    STATUS_FULLTEXT_WEB: "moderate",
+    STATUS_SECONDARY_REVIEW: "moderate",
+    STATUS_ABSTRACT_ONLY: "weak",
+    STATUS_BROWSER_PENDING: "pending",
+    STATUS_UNRESOLVED: "pending",
+    STATUS_MISMATCH: "pending",
 }
 
 
@@ -198,10 +225,14 @@ def ensure_dir(path: Path) -> Path:
     return path
 
 
+def use_legacy_artifacts() -> bool:
+    return os.environ.get("LTO_USE_LEGACY_ARTIFACTS", "").strip().lower() in {"1", "true", "yes"}
+
+
 def build_artifact_root(workbook_path: Path) -> Path:
     preferred = workbook_path.parent / f"{workbook_path.stem}_artifacts"
     legacy = workbook_path.parent / "artifacts"
-    if legacy.exists():
+    if use_legacy_artifacts() and legacy.exists():
         return legacy
     return preferred
 
@@ -219,8 +250,23 @@ def project_file_paths(workbook_path: Path) -> dict[str, Path]:
     return {key: project_dir / filename for key, filename in PROJECT_ARTIFACT_FILES.items()}
 
 
+def workflow_state_path_for_workbook(workbook_path: Path) -> Path:
+    return project_dir_for_workbook(workbook_path) / "workflow-state.json"
+
+
+def pilot_summary_path_for_workbook(workbook_path: Path) -> Path:
+    return project_dir_for_workbook(workbook_path) / "pilot-summary.json"
+
+
+def fieldguide_mapping_path_for_workbook(workbook_path: Path) -> Path:
+    return project_dir_for_workbook(workbook_path) / "fieldguide-mapping.json"
+
+
 def relative_path(path: Path, base: Path) -> str:
-    return path.resolve().relative_to(base.resolve()).as_posix()
+    try:
+        return path.resolve().relative_to(base.resolve()).as_posix()
+    except ValueError:
+        return path.resolve().as_posix()
 
 
 def parse_json_file(path: Path) -> Any:
@@ -241,6 +287,17 @@ def read_json_if_exists(path: Path, default: Any) -> Any:
     if not path.exists():
         return default
     return parse_json_file(path)
+
+
+def load_workflow_state(workbook_path: Path) -> dict[str, Any]:
+    state = read_json_if_exists(workflow_state_path_for_workbook(workbook_path), {})
+    return state if isinstance(state, dict) else {}
+
+
+def save_workflow_state(workbook_path: Path, state: dict[str, Any]) -> Path:
+    path = workflow_state_path_for_workbook(workbook_path)
+    write_json(path, state)
+    return path
 
 
 def run_command(cmd: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
@@ -324,3 +381,115 @@ def evidence_level_for_status(status: str) -> str:
 
 def status_allows_full_backfill(status: str) -> bool:
     return status in PRIMARY_SOURCE_STATUSES or status in SECONDARY_SOURCE_STATUSES
+
+
+def evidence_sufficiency_for_status(status: str) -> str:
+    return EVIDENCE_SUFFICIENCY_BY_STATUS.get(status, "pending")
+
+
+def html_fragment_to_text(fragment: str) -> str:
+    if "<" not in fragment or ">" not in fragment:
+        return normalize_text(unescape(fragment))
+    text = re.sub(r"<br\s*/?>", "\n", fragment, flags=re.I)
+    text = re.sub(r"</(p|h1|h2|h3|li|tr)>", "\n", text, flags=re.I)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = unescape(text)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def extract_markdown_headings(text: str) -> list[str]:
+    headings: list[str] = []
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("#"):
+            headings.append(re.sub(r"^#+\s*", "", line).strip())
+            continue
+        if re.match(r"^\d+(\.\d+)*\s+\S+", line):
+            headings.append(line)
+            continue
+        if len(headings) >= 12:
+            break
+    return headings
+
+
+def extract_docx_text(path: Path) -> str:
+    with zipfile.ZipFile(path) as archive:
+        xml_bytes = archive.read("word/document.xml")
+    root = ET.fromstring(xml_bytes)
+    parts: list[str] = []
+    for node in root.iter():
+        if node.tag.endswith("}t") and node.text:
+            parts.append(node.text)
+        elif node.tag.endswith("}p"):
+            parts.append("\n")
+    text = "".join(parts)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def read_draft_source(source: str | None) -> dict[str, Any]:
+    if not source:
+        return {
+            "source": None,
+            "kind": None,
+            "title": None,
+            "text": "",
+            "headings": [],
+        }
+
+    value = source.strip()
+    if value.startswith("http://") or value.startswith("https://"):
+        result = run_command(
+            [
+                "lark-cli",
+                "docs",
+                "+fetch",
+                "--api-version",
+                "v2",
+                "--doc",
+                value,
+            ]
+        )
+        if result.returncode != 0:
+            raise RuntimeError(result.stderr.strip() or result.stdout.strip() or "Failed to fetch draft source")
+        payload = json.loads(result.stdout)
+        doc = payload.get("data", {}).get("document", {}) or {}
+        content = str(doc.get("content") or "")
+        text = html_fragment_to_text(content)
+        title_match = re.search(r"<title>(.*?)</title>", content, flags=re.I | re.S)
+        return {
+            "source": value,
+            "kind": "feishu_doc",
+            "title": normalize_text(title_match.group(1)) if title_match else None,
+            "text": text,
+            "headings": extract_markdown_headings(text),
+        }
+
+    path = Path(value).expanduser().resolve()
+    if not path.exists():
+        raise FileNotFoundError(f"Draft source does not exist: {path}")
+
+    suffix = path.suffix.lower()
+    if suffix in {".md", ".txt"}:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    elif suffix == ".docx":
+        text = extract_docx_text(path)
+    else:
+        text = path.read_text(encoding="utf-8", errors="replace")
+
+    return {
+        "source": str(path),
+        "kind": suffix.lstrip(".") or "text",
+        "title": path.stem,
+        "text": text.strip(),
+        "headings": extract_markdown_headings(text),
+    }
+
+
+def markdown_has_unresolved_placeholders(text: str) -> bool:
+    lowered = text.lower()
+    return "todo" in lowered or "to fill" in lowered or "[confirm]" in lowered

@@ -15,15 +15,15 @@ Use when the user wants workbook verification, evidence files, and field backfil
 
 ### Survey-oriented mode
 
-Use when the user wants to write a new survey or review article from the workbook and needs:
+Use when the user wants to write a new survey or review article from:
 
-- related-survey reading
-- breakthrough-point analysis
-- outline discussion
-- field-manual upgrade
-- pilot calibration
-- writing-support columns
-- incremental paper expansion
+- a survey topic
+- a literature workbook
+- and optionally a draft source such as Feishu wiki, local markdown, or local docx-derived text
+
+Survey-oriented mode should be driven by:
+
+- `scripts/run_survey_workflow.py`
 
 ## Standard mode flow
 
@@ -39,16 +39,17 @@ Use when the user wants to write a new survey or review article from the workboo
 ## Survey-oriented mode flow
 
 1. Detect the workbook source and structure.
-2. Collect the survey topic and article context.
+2. Collect the survey topic and optional draft source.
 3. Create project-level survey files in `<workbook_stem>_artifacts/project/`.
-4. Read relevant surveys and representative papers.
-5. Produce related-survey analysis and candidate breakthrough angles.
-6. Draft and discuss `outline.md`.
-7. Compare workbook fields against outline-driven needs.
-8. Upgrade the field guide into `field-manual.md`.
+4. Produce related-survey analysis and candidate breakthrough angles.
+5. Draft `outline.md`.
+6. Compare workbook fields against outline-driven needs and create `field-gap-analysis.md`.
+7. Upgrade the field guide into `field-manual.md`.
+8. Confirm the field manual.
 9. Run pilot calibration on 5-10 representative papers.
-10. Only after pilot confirmation, run batch processing.
-11. Support later paper expansion and reprocessing as the survey evolves.
+10. Confirm the pilot.
+11. Only after those gates pass, run batch processing.
+12. Support later paper expansion and reprocessing as the survey evolves.
 
 ## Mandatory project files in survey-oriented mode
 
@@ -56,8 +57,10 @@ Use when the user wants to write a new survey or review article from the workboo
 - `related-survey-analysis.md`
 - `outline.md`
 - `field-manual.md`
+- `field-gap-analysis.md`
 - `pilot-calibration.md`
 - `paper-expansion-log.md`
+- `workflow-state.json`
 
 ## Field-guide upgrade rule
 
@@ -75,10 +78,11 @@ Instead:
 
 1. generate `field-manual.md`
 2. expand each field into a decision-ready manual
-3. discuss and confirm it with the user
-4. only then continue
+3. compare it against the outline-driven needs
+4. discuss and confirm it with the user
+5. only then continue
 
-## Pilot rule
+## Pilot gate
 
 Survey-oriented mode requires pilot calibration before full-table processing.
 
@@ -88,9 +92,16 @@ Pilot must:
 - include boundary cases
 - include strong- and weak-evidence rows
 - record user corrections
+- record at least one stable rule learned
 - feed those corrections back into the field manual and outline
 
-## Evidence order
+Batch processing must stop if:
+
+- the pilot sample count is below the minimum
+- the pilot is still draft/ready but not confirmed
+- the pilot lacks rule-learning records
+
+## Browser gate
 
 Prefer sources in this order:
 
@@ -100,7 +111,18 @@ Prefer sources in this order:
 4. high-quality secondary review page
 5. abstract-only page
 
-Abstract-only pages are a last-resort record, not the default basis for survey-oriented classification or writing evidence.
+If static fetching cannot reach PDF or sufficient fulltext, the result must enter:
+
+- `browser_pending`
+
+At that point the agent using the skill must:
+
+1. open the page with Browser
+2. save `paper.pdf`, `source.md`, or `review.md` into the row asset directory
+3. finalize the capture with `finalize_browser_capture.py`
+4. continue the same evidence pipeline
+
+Rows with unresolved Browser capture are blocked from normal batch output.
 
 ## Workbook columns
 
@@ -126,6 +148,8 @@ In survey-oriented mode also ensure:
 - include why the paper matters for the target section
 - avoid vague generic summaries
 
+Weak or pending evidence should not automatically produce strong writing-ready arguments.
+
 ## Paper expansion rule
 
 When the user asks for more papers on a missing aspect:
@@ -135,6 +159,7 @@ When the user asks for more papers on a missing aspect:
 3. ask for confirmation
 4. append confirmed rows into the workbook
 5. process those rows with the same evidence and writing-support protocol
+6. record the addition in `paper-expansion-log.md`
 
 ## Pause conditions
 
@@ -146,3 +171,4 @@ Pause and discuss when:
 - the field manual is still weak or unconfirmed
 - pilot calibration has not yet been accepted
 - a key classification field still lacks a stable decision question
+- any row is stuck in `browser_pending`

@@ -36,32 +36,38 @@ def header_map(ws) -> dict[str, int]:
     return mapping
 
 
+def first_empty_header_col(ws) -> int | None:
+    for col_idx in range(1, ws.max_column + 1):
+        value = normalize_text(ws.cell(1, col_idx).value)
+        if not value:
+            return col_idx
+    return None
+
+
 def ensure_headers(ws) -> dict[str, int]:
     mapping = header_map(ws)
-    next_col = ws.max_column + 1
     for header in SYSTEM_HEADERS:
         if header not in mapping:
+            next_col = first_empty_header_col(ws) or (ws.max_column + 1)
             ws.cell(1, next_col).value = header
             mapping[header] = next_col
-            next_col += 1
     return mapping
 
 
 def ensure_survey_headers(ws) -> dict[str, int]:
     mapping = header_map(ws)
-    next_col = ws.max_column + 1
     for header in SURVEY_SYSTEM_HEADERS:
         if header not in mapping:
+            next_col = first_empty_header_col(ws) or (ws.max_column + 1)
             ws.cell(1, next_col).value = header
             mapping[header] = next_col
-            next_col += 1
     return mapping
 
 
 def ensure_header(mapping: dict[str, int], ws, header: str) -> int:
     if header in mapping:
         return mapping[header]
-    index = ws.max_column + 1
+    index = first_empty_header_col(ws) or (ws.max_column + 1)
     ws.cell(1, index).value = header
     mapping[header] = index
     return index

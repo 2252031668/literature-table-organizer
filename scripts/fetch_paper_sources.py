@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup
 
 from common import (
     STATUS_ABSTRACT_ONLY,
+    STATUS_BROWSER_PENDING,
     STATUS_FULLTEXT_WEB,
     STATUS_MISMATCH,
     STATUS_PDF_DOWNLOAD,
@@ -219,6 +220,7 @@ def build_payload_base(row: int, title: str, link: str | None, row_dir: Path) ->
         "evidence_level": None,
         "allow_full_backfill": False,
         "warning": None,
+        "browser_completed": False,
     }
 
 
@@ -291,6 +293,8 @@ def inspect_candidate(title: str, candidate: CandidateSource, row_dir: Path, pay
     payload["browser_instructions"] = {
         "resolved_url": final_url,
         "reason": "Static fetching did not reach a PDF or sufficient fulltext page. Use Browser to try dynamic PDF/fulltext retrieval.",
+        "row_asset_dir": str(row_dir),
+        "expected_targets": ["paper.pdf", "source.md", "review.md"],
         "suggested_actions": [
             "Open the resolved page in Browser.",
             "Look for PDF, Download, View PDF, OpenReview PDF, or publisher download controls.",
@@ -349,8 +353,8 @@ def main() -> None:
             return
 
     if payload.get("browser_required"):
-        unresolved = finalize_payload(payload, STATUS_UNRESOLVED, None, payload.get("resolved_url"), payload.get("title_match_score"))
-        emit_json(unresolved)
+        pending = finalize_payload(payload, STATUS_BROWSER_PENDING, None, payload.get("resolved_url"), payload.get("title_match_score"))
+        emit_json(pending)
         return
 
     emit_json(finalize_payload(payload, STATUS_UNRESOLVED, None, None, payload.get("title_match_score")))
