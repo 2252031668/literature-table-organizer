@@ -11,6 +11,7 @@ from openpyxl import load_workbook
 from common import (
     EVIDENCE_PATH_HEADER,
     LOCAL_FILE_HEADER,
+    SURVEY_SYSTEM_HEADERS,
     SYSTEM_HEADERS,
     WARNING_HEADER,
     WARNING_MISSING_TARGET,
@@ -39,6 +40,17 @@ def ensure_headers(ws) -> dict[str, int]:
     mapping = header_map(ws)
     next_col = ws.max_column + 1
     for header in SYSTEM_HEADERS:
+        if header not in mapping:
+            ws.cell(1, next_col).value = header
+            mapping[header] = next_col
+            next_col += 1
+    return mapping
+
+
+def ensure_survey_headers(ws) -> dict[str, int]:
+    mapping = header_map(ws)
+    next_col = ws.max_column + 1
+    for header in SURVEY_SYSTEM_HEADERS:
         if header not in mapping:
             ws.cell(1, next_col).value = header
             mapping[header] = next_col
@@ -104,12 +116,16 @@ def main() -> None:
     parser.add_argument("workbook", help="Workbook path")
     parser.add_argument("sheet_name", help="Primary worksheet name")
     parser.add_argument("--updates-json", help="JSON list of row updates")
+    parser.add_argument("--survey-mode", action="store_true")
     args = parser.parse_args()
 
     workbook_path = Path(args.workbook).resolve()
     wb = load_workbook(workbook_path)
     ws = wb[args.sheet_name]
-    ensure_headers(ws)
+    if args.survey_mode:
+        ensure_survey_headers(ws)
+    else:
+        ensure_headers(ws)
 
     updates = parse_json_file(Path(args.updates_json)) if args.updates_json else []
     warnings_added: list[dict[str, object]] = []
@@ -124,6 +140,7 @@ def main() -> None:
         "updated_rows": [item["row"] for item in updates],
         "warnings_added": warnings_added,
         "link_columns": [LOCAL_FILE_HEADER, EVIDENCE_PATH_HEADER],
+        "survey_mode": args.survey_mode,
     }
     emit_json(payload)
 

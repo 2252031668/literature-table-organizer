@@ -11,11 +11,15 @@ from openpyxl import load_workbook
 
 from common import (
     ABSTRACT_HEADER,
+    CLASSIFICATION_HEADERS,
     EVIDENCE_PATH_HEADER,
     LOCAL_FILE_HEADER,
     PAPER_LINK_HEADER,
     PAPER_TITLE_HEADER,
+    SUMMARY_HEADERS,
     WARNING_HEADER,
+    WRITING_EVIDENCE_HEADER,
+    WRITING_SECTION_HEADER,
     build_artifact_root,
     emit_json,
     ensure_dir,
@@ -30,8 +34,6 @@ from common import (
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-CLASSIFICATION_HEADERS = ["范式映射", "范式小类", "功能映射层", "协同粒度", "是否为双臂针对设计"]
-SUMMARY_HEADERS = ["核验后核心方法", "核验后任务/数据集", "核验后关键结果", "核验后主要局限"]
 
 
 def run_script(script_name: str, args: list[str], cwd: Path) -> dict[str, object]:
@@ -74,7 +76,11 @@ def infer_field_notes(values: dict[str, str]) -> dict[str, dict[str, str]] | Non
             notes[key] = {
                 "value": value,
                 "segments": "S1, S2",
+                "decision_question": f"How should `{key}` be assigned under the current survey taxonomy?",
                 "derivation": "Preserved or updated from the available evidence under the current source policy.",
+                "causal_reasoning": "Trace the paper's input, core modules, outputs, and coordination mechanism before assigning the label.",
+                "exclusion_reason": "Check neighboring categories and record why they were not selected.",
+                "evidence_sufficiency": "Needs reviewer confirmation unless supported by full paper evidence.",
             }
     return notes or None
 
@@ -125,6 +131,7 @@ def main() -> None:
     parser.add_argument("--row-start", type=int, default=2)
     parser.add_argument("--row-end", type=int)
     parser.add_argument("--overwrite-existing-evidence", action="store_true")
+    parser.add_argument("--survey-mode", action="store_true")
     args = parser.parse_args()
 
     workbook_path = Path(args.workbook).resolve()
@@ -181,11 +188,8 @@ def main() -> None:
         source_json_path = write_temp_json(tmp_dir / f"{row:03d}-{slugify(title)}-source.json", source_payload)
         source_rel = relative_path(Path(str(source_payload["local_source"])).resolve(), workbook_dir)
 
-        values: dict[str, str] = {}
-        links: dict[str, str] = {
-            LOCAL_FILE_HEADER: source_rel,
-        }
-        values[LOCAL_FILE_HEADER] = source_rel
+        values: dict[str, str] = {LOCAL_FILE_HEADER: source_rel}
+        links: dict[str, str] = {LOCAL_FILE_HEADER: source_rel}
 
         warning_value = normalize_text(source_payload.get("warning"))
         if warning_value:
@@ -200,6 +204,14 @@ def main() -> None:
             existing_value = cell_value(ws, headers, row, header)
             if existing_value:
                 values[header] = existing_value
+
+        if args.survey_mode:
+            writing_section = cell_value(ws, headers, row, WRITING_SECTION_HEADER)
+            writing_argument = cell_value(ws, headers, row, WRITING_EVIDENCE_HEADER)
+            if writing_section:
+                values[WRITING_SECTION_HEADER] = writing_section
+            if writing_argument:
+                values[WRITING_EVIDENCE_HEADER] = writing_argument
 
         if status_allows_full_backfill(str(source_payload["status"])) and abstract:
             values.setdefault("核验后核心方法", abstract[:300].strip())
@@ -253,11 +265,10 @@ def main() -> None:
         )
 
     updates_json_path = write_temp_json(tmp_dir / "workbook-updates.json", updates)
-    workbook_update_payload = run_script(
-        "update_workbook.py",
-        [str(workbook_path), args.sheet_name, "--updates-json", str(updates_json_path)],
-        workbook_dir,
-    )
+    workbook_update_args = [str(workbook_path), args.sheet_name, "--updates-json", str(updates_json_path)]
+    if args.survey_mode:
+        workbook_update_args.append("--survey-mode")
+    workbook_update_payload = run_script("update_workbook.py", workbook_update_args, workbook_dir)
 
     for item in processed_manifest:
         manifest_by_row[int(item["row"])] = item
@@ -270,6 +281,7 @@ def main() -> None:
         "processed_rows": [item["row"] for item in processed_manifest],
         "manifest_path": str(manifest_path),
         "workbook_update": workbook_update_payload,
+        "survey_mode": args.survey_mode,
     }
     emit_json(payload)
 

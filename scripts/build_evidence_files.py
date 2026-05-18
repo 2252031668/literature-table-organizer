@@ -149,14 +149,35 @@ def build_markdown(
             lines.extend(
                 [
                     f"### {key}",
+                    f"- Decision question: {note.get('decision_question', 'Not explicitly recorded in this pass.')}",
                     f"- Value: {note.get('value', '')}",
                     f"- Source segments: {note.get('segments', '')}",
                     f"- Derivation: {note.get('derivation', '')}",
+                    f"- Why not nearby categories: {note.get('exclusion_reason', 'Not explicitly recorded in this pass.')}",
+                    f"- Evidence sufficiency: {note.get('evidence_sufficiency', 'Needs review')}",
                     "",
                 ]
             )
     else:
         lines.append("- This row does not meet the current full-backfill threshold.")
+        lines.append("")
+
+    lines.extend(["## Decision chain", ""])
+    if field_notes:
+        for key, note in field_notes.items():
+            lines.extend(
+                [
+                    f"### {key}",
+                    f"- Decision question: {note.get('decision_question', 'Not explicitly recorded in this pass.')}",
+                    f"- Final value: {note.get('value', '')}",
+                    f"- Causal reasoning: {note.get('causal_reasoning', note.get('derivation', 'Not explicitly recorded in this pass.'))}",
+                    f"- Exclusion reasoning: {note.get('exclusion_reason', 'Not explicitly recorded in this pass.')}",
+                    f"- Evidence sufficiency: {note.get('evidence_sufficiency', 'Needs review')}",
+                    "",
+                ]
+            )
+    else:
+        lines.append("- No full decision chain was generated in this pass.")
         lines.append("")
 
     lines.extend(["## Verified summary fields", ""])
@@ -165,6 +186,14 @@ def build_markdown(
             lines.append(f"- `{key}`: {sheet_updates[key]}")
     if not any(key in sheet_updates for key in SUMMARY_HEADERS):
         lines.append("- No verified summary fields were written in this pass.")
+
+    lines.extend(["", "## Writing support", ""])
+    if "写作引用章节" in sheet_updates:
+        lines.append(f"- `写作引用章节`: {sheet_updates['写作引用章节']}")
+    if "引用论据" in sheet_updates:
+        lines.append(f"- `引用论据`: {sheet_updates['引用论据']}")
+    if "写作引用章节" not in sheet_updates and "引用论据" not in sheet_updates:
+        lines.append("- No writing-support fields were written in this pass.")
 
     lines.extend(["", "## Notes", ""])
     lines.append("- Keep reasoning constrained to the cited segments and the field-guide sheet.")

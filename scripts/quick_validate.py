@@ -47,6 +47,15 @@ def main() -> int:
     for script in sorted((skill_root / "scripts").glob("*.py")):
         py_compile.compile(str(script), doraise=True)
 
+    required_survey_scripts = [
+        "survey_mode_bootstrap.py",
+        "upgrade_field_manual.py",
+        "append_paper_rows.py",
+    ]
+    missing = [name for name in required_survey_scripts if not (skill_root / "scripts" / name).exists()]
+    if missing:
+        raise FileNotFoundError(f"Missing survey-oriented scripts: {', '.join(missing)}")
+
     print("Script compilation succeeded.")
     return 0
 

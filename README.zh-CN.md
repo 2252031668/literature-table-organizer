@@ -1,69 +1,98 @@
 # literature-table-organizer
 
-一个用于整理文献工作簿的 Codex 技能。它会把“论文表”变成一套可追溯的证据工作流：保留本地全文或网页证据、生成逐篇证据文件、按保守规则回填字段，并在本地 `.xlsx` 中写入可点击打开的路径。
+一个 Codex 技能，用于把文献工作簿变成两种工作流之一：
+
+- 普通的“证据驱动文献表整理”
+- 面向新综述写作前半程的“分类 + 证据 + 写作支撑工作流”
 
 英文文档见 [README.md](README.md)
 
-## 适用场景
+## 两种模式
 
-这个技能适合这样的工作簿：
+### 1. 普通整理模式
 
-- 一张论文主表
-- 一张字段说明表，用来解释用户自定义列应该怎么填
+适合这些场景：
 
-它不把文献整理当成一次性填表，而是走一条可复用流水线：
+- 校验已有文献表
+- 补全文和更强证据
+- 回填用户定义字段
+- 维护本地证据链
+- 在 `.xlsx` 中写入可点击路径
 
-1. 识别工作簿结构
-2. 按“PDF/全文优先”抓取证据
-3. 生成本地证据产物
-4. 把结果和追溯路径写回工作簿
+### 2. 综述导向模式
 
-## v2 更新重点
+适合这些场景：
 
-- 从“摘要优先”升级为“PDF/全文优先”的证据策略
-- 明确证据状态分级与完整回填门槛
-- 本地 `.xlsx` 中的路径列既保留相对路径文本，也支持点击打开
-- 证据 Markdown 会记录证据等级、是否允许完整回填、字段级依据
-- 增加 manifest 与工作簿重建/清理辅助能力
+- 这张文献表是为了写一篇新的综述/评论文章
+- 需要先分析已有综述，再决定自己的突破口
+- 需要写作大纲、字段手册、试分类校准
+- 需要把论文和写作章节对应起来
+- 需要持续补充新论文并重新整理
 
-## 仓库结构
+这个模式会额外走一条前置流程：
 
-- `SKILL.md`
-  面向 Codex 的技能说明
-- `agents/openai.yaml`
-  技能元数据
-- `scripts/`
-  结构识别、抓取、证据生成、工作簿写回、校验与重建脚本
-- `references/`
-  工作流、证据模板、字段说明约定、同步说明、使用示例
-- `assets/demo/`
-  内置 demo 工作簿和 demo manifest
+1. 理解综述主题和文章目标
+2. 阅读相关综述与代表性论文
+3. 分析差异化与突破口
+4. 生成并讨论大纲
+5. 把字段说明升级成字段手册
+6. 抽 5-10 篇论文做校准
+7. 再批量跑整表
+8. 后续继续补论文和重跑
 
-## 核心流程
+## 这个技能解决什么问题
 
-1. 识别输入来源。
-   本地 `xlsx` 或飞书电子表格。
-2. 检测工作簿结构。
-   识别论文主表和字段说明表。
-3. 准备本地可编辑工作区。
-   创建 papers、evidence、snapshots 等兄弟目录。
-4. 抓取证据。
-   优先拿 `paper.pdf`，其次是可读全文网页，再其次是合格的二手解读页。
-5. 生成证据文件。
-   保留 `paper.pdf`、`paper.txt`、`source.md` 或 `review.md`，并为每一行生成一份证据 Markdown。
-6. 写回工作簿。
-   复用或追加 `本地文件路径`、`证据链路径`、`核验警告/状态`，并给本地 `.xlsx` 写入可点击超链接。
-7. 按需预览飞书同步。
-   默认不会自动回传飞书。
+很多文献表最后只剩“结果”，缺少：
+
+- 为什么这样分类
+- 具体证据在哪里
+- 这篇论文服务于综述的哪一章
+- 某个章节缺文献时怎么补
+
+这个技能会把工作簿升级成一套可复用工作区，包括：
+
+- 本地原文或网页证据
+- 逐篇 evidence Markdown
+- manifest 状态文件
+- 项目级综述文档
+- 工作簿可点击路径和写作支撑列
+
+## 综述导向模式的项目级产物
+
+在 `<workbook_stem>_artifacts/project/` 下会生成：
+
+- `project-brief.md`
+- `related-survey-analysis.md`
+- `outline.md`
+- `field-manual.md`
+- `pilot-calibration.md`
+- `paper-expansion-log.md`
+
+其中 `outline.md` 是写作主线中枢。
+
+## 工作簿列
+
+技能始终维护：
+
+- `本地文件路径`
+- `证据链路径`
+- `核验警告/状态`
+
+在综述导向模式下，还会维护：
+
+- `写作引用章节`
+- `引用论据`
+
+对本地 `.xlsx`，路径列会保留相对路径文本，同时写成本地可点击超链接。
 
 ## 证据策略
 
 ### 优先级
 
-1. 本地可保存的论文全文，例如 `paper.pdf`
-2. 官方可读的全文网页
-3. 信息足够支撑结论的项目页、OpenReview 页或仓库文档
-4. 高质量二手论文解读页
+1. 本地全文，例如 `paper.pdf`
+2. 官方可读全文网页
+3. 项目页、OpenReview 页或仓库文档
+4. 高质量二手解读页
 5. 仅摘要页
 
 ### 状态枚举
@@ -78,132 +107,120 @@
 
 ### 完整回填门槛
 
-只有以下状态默认允许完整回填工作簿：
+只有以下状态默认允许完整回填：
 
 - `pdf_download`
 - `pdf_via_browser`
 - `fulltext_web`
 - `secondary_review`
 
-以下状态默认只允许保守处理，不应驱动完整分类：
+摘要级证据不再是综述导向模式下的默认完整分类依据。
 
-- `abstract_only`
-- `unresolved`
-- `mismatch_or_unverifiable`
+## 分类协议
 
-在 v2 中，摘要页不再被当作默认完整核验依据。
+这个技能不再把分类理解成“只填一个值”。
 
-## Browser fallback 现状
+对主要字段，evidence Markdown 应该记录：
 
-这个技能的抓取链路把 Browser fallback 视为静态抓取失败后的标准下一步。
+- 判定问题
+- 最终取值
+- 关键证据片段
+- 前因后果式推理链
+- 排除性解释
+- 证据充分性
 
-但 v2 会如实说明当前能力边界：
+这对综述导向模式尤其重要，因为 `引用论据` 必须能直接服务写作，而不是泛泛描述。
 
-- 先执行静态 HTTP 抓取
-- 抓取脚本会输出 Browser fallback 指引，并标记需要动态抓取
-- Python 抓取脚本目前还不会在脚本内部全自动完成 Browser 动态下载
+## 字段说明 vs 字段手册
 
-也就是说，Browser fallback 在 v2 中是“半自动兜底链路”，而不是“脚本内全自动下载器”。
+工作簿里仍然可以保留轻量字段说明表，例如：
 
-## 本地工作簿行为
+- 字段名
+- 建议填写方式
+- 推荐取值/说明
 
-对于本地 `.xlsx`，技能会在保留相对路径文本的同时，把以下列写成本地可点击超链接：
+但在综述导向模式下，这只算 legacy 输入。
 
-- `本地文件路径`
-- `证据链路径`
+技能会把它升级成 `field-manual.md`，其中应该明确：
 
-这样就可以直接从工作簿打开对应的 PDF 或证据 Markdown。
+- 字段作用
+- 服务哪一章或哪类写作问题
+- 判定问题
+- 正例/触发条件
+- 易混淆项
+- 所需证据
+- 证据不足时如何保守处理
 
-## 已知限制
+在字段手册确认前，不应直接批量跑综述导向分类。
 
-- 摘要页不能作为默认完整回填依据。
-- 某些站点仍需要人工处理或 Browser 辅助抓取。
-- 标题与来源疑似错配的行会被主动降级，禁止自动分类。
-- 飞书同步走保守流程，先本地后回传。
-- 内置 demo 只用于展示流程，不代表真实论文抓取覆盖能力。
+## Browser fallback
 
-## 快速开始
+抓取链路仍然遵循：
 
-### 环境要求
+- 先静态 HTTP 抓取
+- 如果失败，再进入 Browser fallback
 
-- Python 3.9 及以上
-- 脚本依赖的 Python 包，包括工作簿和 PDF 处理相关依赖
-- 可使用 Codex 技能的运行环境
+当前能力边界会如实说明：
 
-### 校验技能
+- 脚本会输出 Browser fallback 指引
+- 但 Python 抓取脚本内部还没有完全自动化的 Browser 动态下载
 
-```bash
-python scripts/quick_validate.py
-```
+所以 Browser fallback 目前仍是“半自动兜底链路”。
 
-### 本地使用方式
+## 持续补论文
 
-把技能用于一个包含以下内容的本地工作簿：
+综述导向模式支持在发现章节空白后继续扩表。
 
-- 一张带 `论文全名` 的论文主表
-- 可选的 `论文链接`、`摘要`
-- 一张语义上对应 `字段`、`建议填写方式`、`推荐取值/说明` 的字段说明表
+默认流程：
 
-之后技能脚本会准备 artifact 目录、抓取证据、生成证据文件，并把结果写回工作簿。
+1. 检索候选论文
+2. 解释为什么相关
+3. 等用户确认
+4. 追加到工作簿新行
+5. 用同一套证据和写作支撑流程处理这些新行
 
-### Demo
+## 仓库结构
+
+- `SKILL.md`
+  面向 Codex 的技能说明
+- `scripts/`
+  包括结构识别、抓取、证据生成、survey bootstrap、字段手册升级、追加行、重建和校验
+- `references/`
+  包括 workflow、field guide contract、evidence template、usage demo
+- `assets/demo/`
+  demo 工作簿和 demo manifest
+
+## 主要脚本
+
+- `scripts/detect_workbook_structure.py`
+- `scripts/prepare_local_workspace.py`
+- `scripts/survey_mode_bootstrap.py`
+- `scripts/upgrade_field_manual.py`
+- `scripts/fetch_paper_sources.py`
+- `scripts/build_evidence_files.py`
+- `scripts/update_workbook.py`
+- `scripts/append_paper_rows.py`
+- `scripts/rebuild_local_workbook.py`
+- `scripts/quick_validate.py`
+
+## Demo
 
 仓库内置：
 
 - `assets/demo/literature-demo.xlsx`
 - `assets/demo/demo-manifest.json`
 
-如果需要重建 demo 工作簿，可以运行：
+demo 现在同时展示普通模式和综述导向模式的预期结构，包括写作支撑列。
+
+## 校验技能
 
 ```bash
-python scripts/create_demo_workbook.py
+python scripts/quick_validate.py
 ```
 
-## 主要脚本
+## 当前限制
 
-- `scripts/detect_workbook_structure.py`
-  识别论文主表和字段说明表候选项。
-- `scripts/prepare_local_workspace.py`
-  准备本地副本和 artifact 目录。
-- `scripts/fetch_paper_sources.py`
-  解析 PDF/全文来源，并在需要时输出 Browser fallback 指引。
-- `scripts/build_evidence_files.py`
-  生成证据 Markdown 和 PDF 文本抽取文件。
-- `scripts/update_workbook.py`
-  按列名写回单元格和本地超链接。
-- `scripts/rebuild_local_workbook.py`
-  基于已有本地证据和 manifest 重建工作簿状态。
-- `scripts/quick_validate.py`
-  校验技能结构并编译脚本。
-
-## 输出目录
-
-默认情况下，本地 artifact 会放在工作簿旁边：
-
-- `<workbook_stem>_artifacts/papers/`
-- `<workbook_stem>_artifacts/evidence/`
-- `<workbook_stem>_artifacts/snapshots/`
-
-如果旁边已经存在旧的 `artifacts/` 目录，脚本会优先复用它。
-
-manifest 会记录每一行的核心状态，例如：
-
-- row
-- title
-- local source path
-- evidence path
-- status
-- warning
-- backfill eligibility
-- resolved URL
-
-## 发布说明
-
-这个仓库既可以作为技能源码仓库分发，也可以作为打包压缩包的来源，例如 `literature-table-organizer-v2.zip`。
-
-对外发布时建议排除以下临时内容：
-
-- `__pycache__/`
-- `.pyc`
-- 本地运行生成的工作簿产物
-- 与内置 demo 无关的论文下载缓存和证据缓存
+- 某些 Windows 环境下，系统自带的 skill validator 可能因为默认编码不是 UTF-8 而读取 Markdown 失败。
+- Browser fallback 仍是半自动。
+- 弱字段说明需要先升级成字段手册再严肃使用。
+- 这个技能覆盖的是综述生产前半程，不直接负责生成整篇综述正文。

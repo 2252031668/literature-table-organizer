@@ -22,6 +22,10 @@ FIELD_VALUE_HEADER = "\u63a8\u8350\u53d6\u503c/\u8bf4\u660e"
 LOCAL_FILE_HEADER = "\u672c\u5730\u6587\u4ef6\u8def\u5f84"
 EVIDENCE_PATH_HEADER = "\u8bc1\u636e\u94fe\u8def\u5f84"
 WARNING_HEADER = "\u6838\u9a8c\u8b66\u544a/\u72b6\u6001"
+WRITING_SECTION_HEADER = "\u5199\u4f5c\u5f15\u7528\u7ae0\u8282"
+WRITING_EVIDENCE_HEADER = "\u5f15\u7528\u8bba\u636e"
+PROJECT_MODE_SURVEY = "survey_oriented"
+PROJECT_MODE_STANDARD = "standard"
 CLASSIFICATION_HEADERS = [
     "\u8303\u5f0f\u6620\u5c04",
     "\u8303\u5f0f\u5c0f\u7c7b",
@@ -37,6 +41,16 @@ SUMMARY_HEADERS = [
 ]
 
 SYSTEM_HEADERS = [LOCAL_FILE_HEADER, EVIDENCE_PATH_HEADER, WARNING_HEADER]
+SURVEY_SYSTEM_HEADERS = SYSTEM_HEADERS + [WRITING_SECTION_HEADER, WRITING_EVIDENCE_HEADER]
+
+PROJECT_ARTIFACT_FILES = {
+    "brief": "project-brief.md",
+    "survey_analysis": "related-survey-analysis.md",
+    "outline": "outline.md",
+    "field_manual": "field-manual.md",
+    "pilot": "pilot-calibration.md",
+    "expansion_log": "paper-expansion-log.md",
+}
 
 STATUS_PDF_DOWNLOAD = "pdf_download"
 STATUS_PDF_VIA_BROWSER = "pdf_via_browser"
@@ -194,6 +208,15 @@ def build_artifact_root(workbook_path: Path) -> Path:
 
 def manifest_path_for_workbook(workbook_path: Path) -> Path:
     return build_artifact_root(workbook_path) / "manifest.json"
+
+
+def project_dir_for_workbook(workbook_path: Path) -> Path:
+    return build_artifact_root(workbook_path) / "project"
+
+
+def project_file_paths(workbook_path: Path) -> dict[str, Path]:
+    project_dir = project_dir_for_workbook(workbook_path)
+    return {key: project_dir / filename for key, filename in PROJECT_ARTIFACT_FILES.items()}
 
 
 def relative_path(path: Path, base: Path) -> str:

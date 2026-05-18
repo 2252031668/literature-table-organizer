@@ -15,6 +15,8 @@ from common import (
     PAPER_LINK_HEADER,
     PAPER_TITLE_HEADER,
     WARNING_HEADER,
+    WRITING_EVIDENCE_HEADER,
+    WRITING_SECTION_HEADER,
 )
 
 
@@ -40,6 +42,8 @@ def main() -> None:
             "\u6838\u9a8c\u540e\u4efb\u52a1/\u6570\u636e\u96c6",
             "\u6838\u9a8c\u540e\u5173\u952e\u7ed3\u679c",
             "\u6838\u9a8c\u540e\u4e3b\u8981\u5c40\u9650",
+            WRITING_SECTION_HEADER,
+            WRITING_EVIDENCE_HEADER,
             LOCAL_FILE_HEADER,
             EVIDENCE_PATH_HEADER,
             WARNING_HEADER,
@@ -50,6 +54,8 @@ def main() -> None:
             "RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control",
             "https://arxiv.org/abs/2307.15818",
             "General VLA baseline that transfers web-scale vision-language knowledge into robotic control.",
+            "",
+            "",
             "",
             "",
             "",
@@ -81,6 +87,8 @@ def main() -> None:
             "",
             "",
             "",
+            "",
+            "",
         ]
     )
     paper_ws.append(
@@ -88,6 +96,8 @@ def main() -> None:
             "Large Language Models for Orchestrating Bimanual Robots (LABOR)",
             "https://arxiv.org/abs/2404.02018",
             "An LLM-based orchestration paper for long-horizon bimanual manipulation that is useful for testing webpage fallback behavior.",
+            "",
+            "",
             "",
             "",
             "",
@@ -114,6 +124,8 @@ def main() -> None:
     guide_ws.append(["\u6838\u9a8c\u540e\u4efb\u52a1/\u6570\u636e\u96c6", "\u6982\u62ec\u8bba\u6587\u4f7f\u7528\u7684\u4efb\u52a1\u3001\u573a\u666f\u6216\u6570\u636e\u96c6", "\u4f18\u5148\u6765\u81ea\u5168\u6587"])
     guide_ws.append(["\u6838\u9a8c\u540e\u5173\u952e\u7ed3\u679c", "\u586b\u5199\u6700\u652f\u6491\u5206\u7c7b\u6216\u65b9\u6cd5\u4ef7\u503c\u7684\u7ed3\u679c", "\u53ef\u4ee5\u662f\u5b9a\u6027\u6216\u5b9a\u91cf"])
     guide_ws.append(["\u6838\u9a8c\u540e\u4e3b\u8981\u5c40\u9650", "\u4fdd\u5b88\u63d0\u70bc\u8bba\u6587\u5c40\u9650", "\u65e0\u6cd5\u786e\u8ba4\u65f6\u7528 warning \u5217\u8bf4\u660e"])
+    guide_ws.append([WRITING_SECTION_HEADER, "\u6307\u5411\u5199\u4f5c\u5927\u7eb2\u4e2d\u7684\u7ae0\u8282\u6216\u5b50\u7ae0\u8282", "\u4f8b\u5982 3.2 Taxonomy / 4.1 Representative methods"])
+    guide_ws.append([WRITING_EVIDENCE_HEADER, "\u5199\u5165\u53ef\u76f4\u63a5\u670d\u52a1\u5199\u4f5c\u7684\u5177\u4f53\u8bba\u636e", "\u5305\u542b\u5177\u4f53\u65b9\u6cd5\u5dee\u5f02\u3001\u6570\u5b57\u7ed3\u679c\u6216\u8fb9\u754c\u8bf4\u660e"])
 
     wb.save(output)
     print(output)

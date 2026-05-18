@@ -1,60 +1,83 @@
 # Literature Table Organizer
 
-A Codex skill for turning a literature workbook into a traceable review workspace with local evidence files, conservative backfill rules, and clickable local paths in `.xlsx`.
+A Codex skill for turning a literature workbook into either:
+
+- a standard evidence-backed review table
+- a survey-oriented classification and writing-support workspace
 
 Chinese documentation: [README.zh-CN.md](README.zh-CN.md)
 
-## What It Is For
+## Two Modes
 
-This skill is designed for workflows where a workbook contains:
+### 1. Standard mode
 
-- one paper sheet with rows of papers
-- one field-guide sheet that explains how user-defined columns should be filled
+Use this when you want to:
 
-Instead of treating the workbook as a one-off table fill, the skill builds a repeatable pipeline:
+- verify papers in an existing workbook
+- collect better evidence
+- fill user-defined fields
+- maintain local traceability files
+- write clickable local paths back into `.xlsx`
 
-1. detect workbook structure
-2. fetch paper evidence with PDF/fulltext-first policy
-3. generate local evidence artifacts
-4. write results and traceability paths back to the workbook
+### 2. Survey-oriented mode
 
-## V2 Highlights
+Use this when the workbook is part of preparing a new survey or review paper.
 
-- PDF/fulltext-first evidence policy instead of abstract-first filling
-- explicit evidence status levels and backfill thresholds
-- local `.xlsx` path cells stay human-readable and also become clickable hyperlinks
-- evidence Markdown now records source level, backfill eligibility, and field-level rationale
-- manifest and workbook rebuild helpers for cleanup and consistency repair
+This mode adds a front-half survey workflow:
 
-## Repository Layout
+1. understand the survey topic and article goal
+2. read related surveys and representative papers
+3. identify differentiation and breakthrough angles
+4. draft an outline
+5. upgrade the field guide into a field manual
+6. calibrate taxonomy decisions on 5-10 papers
+7. batch process the workbook
+8. keep expanding the paper pool as the outline evolves
 
-- `SKILL.md`
-  Codex-facing skill instructions
-- `agents/openai.yaml`
-  skill metadata
-- `scripts/`
-  structure detection, fetching, evidence generation, workbook update, validation, and rebuild helpers
-- `references/`
-  workflow, evidence template, field-guide contract, sync notes, and usage examples
-- `assets/demo/`
-  bundled workbook demo and demo manifest
+## What the Skill Solves
 
-## Core Workflow
+Many literature tables stop at “filled values” and do not preserve:
 
-1. Detect the workbook source.
-   Local `xlsx` or Feishu spreadsheet.
-2. Detect workbook structure.
-   Identify the primary paper sheet and the field-guide sheet.
-3. Prepare a local editable workspace.
-   Create sibling artifact folders for papers, evidence, and snapshots.
-4. Fetch evidence.
-   Prefer `paper.pdf`, then readable fulltext pages, then qualified secondary review pages.
-5. Build evidence files.
-   Preserve `paper.pdf`, `paper.txt`, `source.md`, or `review.md` as appropriate and generate one evidence Markdown file per paper.
-6. Update the workbook.
-   Reuse or append `本地文件路径`, `证据链路径`, and `核验警告/状态`, and write clickable local hyperlinks for local `.xlsx`.
-7. Optionally preview Feishu sync.
-   Feishu is not auto-synced by default.
+- why a paper was classified that way
+- what evidence actually supports the classification
+- which survey section the paper contributes to
+- how to extend the table when a new writing gap appears
+
+This skill turns the workbook into a reusable workspace with:
+
+- local source artifacts
+- per-paper evidence Markdown
+- manifest state
+- project-level survey files
+- workbook hyperlinks and writing-support columns
+
+## Survey-Oriented Project Files
+
+In survey-oriented mode, the skill creates:
+
+- `<workbook_stem>_artifacts/project/project-brief.md`
+- `<workbook_stem>_artifacts/project/related-survey-analysis.md`
+- `<workbook_stem>_artifacts/project/outline.md`
+- `<workbook_stem>_artifacts/project/field-manual.md`
+- `<workbook_stem>_artifacts/project/pilot-calibration.md`
+- `<workbook_stem>_artifacts/project/paper-expansion-log.md`
+
+`outline.md` is the central writing scaffold.
+
+## Workbook Columns
+
+The skill always maintains:
+
+- `本地文件路径`
+- `证据链路径`
+- `核验警告/状态`
+
+In survey-oriented mode it also maintains:
+
+- `写作引用章节`
+- `引用论据`
+
+For local `.xlsx`, path cells remain human-readable relative paths and are also written as clickable hyperlinks.
 
 ## Evidence Policy
 
@@ -78,135 +101,118 @@ Instead of treating the workbook as a one-off table fill, the skill builds a rep
 
 ### Full Backfill Rule
 
-Full workbook backfill is allowed only for:
+Full backfill is allowed only for:
 
 - `pdf_download`
 - `pdf_via_browser`
 - `fulltext_web`
 - `secondary_review`
 
-These states are conservative by default and should not drive full classification:
+Abstract-only evidence is not the default basis for complete survey-oriented classification.
 
-- `abstract_only`
-- `unresolved`
-- `mismatch_or_unverifiable`
+## Classification Protocol
 
-Abstract-only evidence is not treated as a default basis for complete verification in v2.
+The skill no longer treats classification as only “fill a value”.
+
+For major fields, evidence Markdown should capture:
+
+- decision question
+- final value
+- key evidence segments
+- causal reasoning chain
+- exclusion reasoning
+- evidence sufficiency
+
+This is especially important in survey-oriented mode, where `引用论据` should be writing-ready rather than generic.
+
+## Field Guide vs Field Manual
+
+The workbook may still contain a lightweight guide sheet with:
+
+- field name
+- fill guidance
+- recommended values
+
+That is treated as a legacy input.
+
+In survey-oriented mode, the skill upgrades it into `field-manual.md`, which should express:
+
+- field purpose
+- writing section served
+- decision question
+- positive triggers
+- confusing neighbors
+- required evidence
+- conservative fallback rule
+
+Batch survey-oriented processing should not proceed until the upgraded field manual is discussed and confirmed.
 
 ## Browser Fallback
 
-The fetch pipeline is designed to treat Browser fallback as the standard next step after static fetching fails.
+The fetch chain treats Browser fallback as the standard next step after static fetching fails.
 
-Current v2 behavior is intentionally described conservatively:
+Current behavior is intentionally described conservatively:
 
 - static HTTP fetching runs first
-- the fetch script can emit Browser fallback instructions and mark that dynamic retrieval is required
-- Browser-based dynamic retrieval is not yet executed fully automatically inside the Python fetch script
+- the fetch script can emit Browser fallback instructions
+- Browser-driven dynamic retrieval is not yet fully automated inside the Python fetch script
 
-In practice, this means Browser fallback is supported as a semi-automatic recovery path rather than a fully automated in-script downloader.
+So Browser fallback is supported as a semi-automatic recovery path rather than a fully automated in-script downloader.
 
-## Local Workbook Behavior
+## Incremental Paper Expansion
 
-For local `.xlsx` workbooks, the skill preserves relative path text in the workbook while also writing local hyperlinks for:
+Survey-oriented mode supports expanding the workbook when a section or topic is under-covered.
 
-- `本地文件路径`
-- `证据链路径`
+Default flow:
 
-This makes it possible to click from the workbook directly into the downloaded paper or evidence Markdown file.
+1. search for candidate papers
+2. explain why they are relevant
+3. wait for user confirmation
+4. append them as new workbook rows
+5. process the new rows with the same evidence and writing-support workflow
 
-## Known Limits
+## Repository Layout
 
-- Abstract pages are not accepted as the default basis for full backfill.
-- Some sites still require manual or Browser-assisted retrieval.
-- Title/source mismatch rows are intentionally downgraded and should not be auto-classified.
-- Feishu sync is staged and conservative; local editing comes first.
-- The bundled demo is only for workflow illustration and does not represent broad real-world fetch coverage.
+- `SKILL.md`
+  Codex-facing skill instructions
+- `scripts/`
+  detection, fetch, evidence, workbook updates, survey bootstrap, field-manual upgrade, row append, rebuild, and validation
+- `references/`
+  workflow, field-guide contract, evidence template, and usage examples
+- `assets/demo/`
+  demo workbook and demo manifest
 
-## Quick Start
+## Main Scripts
 
-### Prerequisites
+- `scripts/detect_workbook_structure.py`
+- `scripts/prepare_local_workspace.py`
+- `scripts/survey_mode_bootstrap.py`
+- `scripts/upgrade_field_manual.py`
+- `scripts/fetch_paper_sources.py`
+- `scripts/build_evidence_files.py`
+- `scripts/update_workbook.py`
+- `scripts/append_paper_rows.py`
+- `scripts/rebuild_local_workbook.py`
+- `scripts/quick_validate.py`
 
-- Python 3.9+
-- Python packages required by the scripts, including workbook and PDF handling dependencies
-- Codex environment capable of using the skill
-
-### Validate the Skill
-
-```bash
-python scripts/quick_validate.py
-```
-
-### Typical Local Workflow
-
-Use the skill against a local workbook that contains:
-
-- a paper sheet with `论文全名`
-- optionally `论文链接` and `摘要`
-- a field-guide sheet with semantic equivalents of `字段`, `建议填写方式`, and `推荐取值/说明`
-
-The skill scripts then prepare artifacts, fetch evidence, build evidence files, and update the workbook.
-
-### Demo
+## Demo
 
 The repository includes:
 
 - `assets/demo/literature-demo.xlsx`
 - `assets/demo/demo-manifest.json`
 
-You can regenerate the demo workbook with:
+The demo now shows both standard and survey-oriented workflow expectations, including writing-support columns.
+
+## Validate the Skill
 
 ```bash
-python scripts/create_demo_workbook.py
+python scripts/quick_validate.py
 ```
 
-## Main Scripts
+## Known Limits
 
-- `scripts/detect_workbook_structure.py`
-  Detect paper-sheet and field-guide-sheet candidates.
-- `scripts/prepare_local_workspace.py`
-  Prepare local copies and artifact folders.
-- `scripts/fetch_paper_sources.py`
-  Resolve PDF/fulltext sources and emit Browser fallback instructions when needed.
-- `scripts/build_evidence_files.py`
-  Generate evidence Markdown and PDF text extracts.
-- `scripts/update_workbook.py`
-  Update workbook cells and local hyperlinks by header name.
-- `scripts/rebuild_local_workbook.py`
-  Rebuild workbook rows from existing local evidence and manifest state.
-- `scripts/quick_validate.py`
-  Validate skill structure and compile scripts.
-
-## Output Structure
-
-By default, local artifacts live beside the workbook in:
-
-- `<workbook_stem>_artifacts/papers/`
-- `<workbook_stem>_artifacts/evidence/`
-- `<workbook_stem>_artifacts/snapshots/`
-
-If a legacy sibling `artifacts/` directory already exists, the scripts prefer reusing it.
-
-The manifest records per-row state such as:
-
-- row
-- title
-- local source path
-- evidence path
-- status
-- warning
-- backfill eligibility
-- resolved URL
-
-## Publishing Notes
-
-This repository is suitable both as:
-
-- source distribution for the skill itself
-- the basis of a packaged skill archive such as `literature-table-organizer-v2.zip`
-
-For public releases, exclude caches and transient artifacts such as:
-
-- `__pycache__/`
-- `.pyc`
-- local workbook outputs
-- downloaded paper/evidence caches unrelated to the bundled demo
+- The system-level skill validator on some Windows setups may hit local encoding issues when reading UTF-8 Markdown through a non-UTF-8 default code page.
+- Browser fallback is still semi-automatic.
+- Weak field guides should be upgraded before serious survey-oriented use.
+- The skill supports the front half of survey production, not full article drafting.

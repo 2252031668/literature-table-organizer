@@ -4,54 +4,62 @@
 
 Use the bundled demo workbook in `assets/demo/literature-demo.xlsx`.
 
-It contains:
+It demonstrates:
 
-- a primary paper sheet with the required paper-title column
-- optional link and abstract columns
-- several user-defined literature fields
-- a field-guide worksheet with semantic headers
+- standard literature-table organization
+- survey-oriented writing support
+- lightweight guide input that can be upgraded into a field manual
 
-## Demo scenario 1: local workbook
+## Demo scenario 1: standard mode
 
 1. Start from the demo workbook.
-2. Detect the workbook structure.
-3. Choose copy mode so the original demo file stays untouched.
-4. Prepare the local artifact folders beside the working copy.
-5. Pick one or two paper rows and run the evidence workflow.
-6. Write back:
-   - user-defined fields
+2. Detect workbook structure.
+3. Prepare a local working copy.
+4. Pick one or two rows and run the evidence workflow.
+5. Write back:
+   - classification fields
    - local-file path
    - evidence-path
    - warning/status
-7. Open the evidence Markdown files and confirm each conclusion points to a source segment.
-8. Click the `本地文件路径` and `证据链路径` cells in Excel and confirm they open the target file.
+6. Open the evidence Markdown file and confirm each conclusion points to source segments.
+7. Click the local path cells in Excel and confirm they open the target files.
 
-## Demo scenario 2: Feishu workbook
+## Demo scenario 2: survey-oriented mode
 
-1. Use any Feishu sheet that follows the same two-sheet pattern.
-2. Export it locally with `prepare_local_workspace.py`.
-3. Run the same evidence workflow on the local export.
-4. Preview sync with `feishu_sync.py --mode preview`.
-5. Only execute sync after explicit user confirmation.
+1. Start from the same workbook, but also provide a survey topic.
+2. Run survey bootstrap and create the project files under `<workbook_stem>_artifacts/project/`.
+3. Draft `outline.md` and compare it with the current workbook fields.
+4. Upgrade the lightweight guide into `field-manual.md`.
+5. Use 5-10 representative rows for pilot calibration.
+6. Fill `写作引用章节` and `引用论据` for sample rows.
+7. Confirm that evidence Markdown now contains decision-chain sections.
+
+## Demo scenario 3: incremental paper expansion
+
+1. Identify a missing aspect from the outline.
+2. Search for candidate papers.
+3. Confirm which ones should be added.
+4. Append them as new workbook rows.
+5. Process those new rows with the same evidence and writing-support workflow.
 
 ## What to show when sharing the skill
 
-- the workbook structure detection result
-- the generated `<workbook_stem>_artifacts/` folders
+- workbook structure detection
+- project-level files in survey-oriented mode
 - one paper asset folder
-- one evidence Markdown file
-- the manifest file
-- the updated workbook cells for:
-  - user-defined classifications
+- one evidence Markdown file with decision-chain content
+- manifest and project bootstrap files
+- updated workbook cells for:
+  - classification fields
+  - writing-support fields
   - local-file path
   - evidence-path
   - warning/status
-- clickable path cells in the local xlsx workbook
 
 ## Suggested talking points
 
-- The skill does not hardcode one research taxonomy.
-- The field-guide worksheet tells the agent how to interpret user-defined columns.
-- The evidence Markdown is the traceability layer.
-- Browser fallback is part of the standard workflow when static fetching cannot reach the real paper asset.
-- Feishu editing is intentionally staged through a local workbook first.
+- The skill now supports both standard and survey-oriented workflows.
+- Survey-oriented mode does not go straight to batch classification.
+- A weak guide sheet can be upgraded into a stronger field manual.
+- Evidence Markdown is both a traceability layer and a writing-support layer.
+- Browser fallback remains part of the fetch chain when static fetching cannot reach the real paper asset.

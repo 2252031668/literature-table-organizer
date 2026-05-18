@@ -13,6 +13,7 @@ from common import (
     OPTIONAL_ABSTRACT_HEADERS,
     OPTIONAL_LINK_HEADERS,
     PRIMARY_TITLE_HEADERS,
+    SURVEY_SYSTEM_HEADERS,
     SYSTEM_HEADERS,
     VALUE_COL_KEYS,
     normalize_key,
@@ -61,6 +62,14 @@ def detect_existing_columns(headers: list[str]) -> dict[str, int | None]:
     return existing
 
 
+def detect_existing_survey_columns(headers: list[str]) -> dict[str, int | None]:
+    existing = {header: None for header in SURVEY_SYSTEM_HEADERS}
+    for idx, header in enumerate(headers, start=1):
+        if header in existing:
+            existing[header] = idx
+    return existing
+
+
 def build_candidate_payload(ws, headers: list[str]) -> dict[str, object]:
     return {
         "sheet_name": ws.title,
@@ -68,6 +77,7 @@ def build_candidate_payload(ws, headers: list[str]) -> dict[str, object]:
         "max_row": ws.max_row,
         "max_col": ws.max_column,
         "existing_columns": detect_existing_columns(headers),
+        "existing_survey_columns": detect_existing_survey_columns(headers),
     }
 
 
