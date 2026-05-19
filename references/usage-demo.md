@@ -2,81 +2,63 @@
 
 ## Demo package
 
-Use the bundled demo workbook in `assets/demo/literature-demo.xlsx`.
+Use the bundled workbook in:
 
-It demonstrates:
+- `assets/demo/literature-demo.xlsx`
 
-- standard literature-table organization
-- survey-oriented writing support
-- lightweight guide input that can be upgraded into a field manual
-- orchestration through a single survey workflow entry
+## Demo scenario 1: initialize project
 
-## Demo scenario 1: standard mode
+1. Run:
+   - `python scripts/cli.py init-project --topic ... --workbook ...`
+2. Confirm these workspace outputs:
+   - `project/framework.md`
+   - `project/project-brief.md`
+   - `project/survey-gap-analysis.md`
+   - `project/pilot-calibration.md`
 
-1. Start from the demo workbook.
-2. Detect workbook structure.
-3. Prepare a local working copy.
-4. Pick one or two rows and run the evidence workflow.
-5. Write back:
-   - classification fields
-   - local-file path
-   - evidence-path
-   - warning/status
-6. Open the evidence Markdown file and confirm each conclusion points to source segments.
-7. Click the local path cells in Excel and confirm they open the target files.
+## Demo scenario 2: normalize workbook headers
 
-## Demo scenario 2: survey-oriented mode
+1. Use a workbook with Chinese headers.
+2. Run:
+   - `python scripts/cli.py normalize-workbook-headers --workbook ...`
+3. Confirm supported headers become English canonical keys in the normalized copy.
 
-1. Start from the same workbook and provide a survey topic.
-2. Optionally provide a draft source.
-3. Run `run_survey_workflow.py --phase bootstrap`.
-4. Inspect:
-   - `project-brief.md`
-   - `related-survey-analysis.md`
-   - `outline.md`
-   - `field-gap-analysis.md`
-5. Run `run_survey_workflow.py --phase manual`.
-6. Confirm the field manual and mark it confirmed.
-7. Run `run_survey_workflow.py --phase pilot`.
-8. Confirm the pilot after recording rule-learning notes.
-9. Only then run `run_survey_workflow.py --phase batch`.
+## Demo scenario 3: row analysis
 
-## Demo scenario 3: Browser fallback
+1. Prepare a local PDF at `papers/<row>-<slug>/paper.pdf`.
+2. Run:
+   - `python scripts/cli.py row-analyze --workbook ... --row ... --pdf ...`
+3. Confirm outputs:
+   - `paper-reports/<row>-<slug>.md`
+   - `row-analysis/<row>-<slug>.json`
+4. Confirm the report has:
+   - Part A in Chinese
+   - Part B in English field decisions
 
-1. Pick a row whose static fetch does not reach the real paper asset.
-2. Confirm that the row enters `browser_pending`.
-3. Use Browser to retrieve `paper.pdf`, `source.md`, or `review.md`.
-4. Finalize the capture and resume the batch workflow.
-5. Confirm that the row now produces evidence and workbook output instead of staying pending.
+## Demo scenario 4: pilot and batch task organization
 
-## Demo scenario 4: incremental paper expansion
+1. Run:
+   - `python scripts/cli.py pilot-run --workbook ... --rows 2,3,4`
+2. Run:
+   - `python scripts/cli.py batch-analyze --workbook ... --row-start 2 --row-end 20`
+3. Confirm:
+   - `project/review-queue.md`
+   - `project/pilot-tasks.json`
+   - `project/batch-tasks.json`
 
-1. Identify a missing aspect from the outline.
-2. Run candidate planning for that aspect.
-3. Confirm which papers should be added.
-4. Append them as new workbook rows.
-5. Process those new rows with the same evidence and writing-support workflow.
-6. Record the addition in `paper-expansion-log.md`.
+## Demo scenario 5: workbook writeback
 
-## What to show when sharing the skill
+1. Fill row-analysis JSON files after direct PDF reading.
+2. Run:
+   - `python scripts/cli.py writeback-xlsx --workbook ... --preserve-headers`
+3. Confirm values come only from JSON, not fresh inference.
 
-- workbook structure detection
-- project-level files in survey-oriented mode
-- one paper asset folder
-- one evidence Markdown file with decision-chain content
-- manifest and workflow-state files
-- updated workbook cells for:
-  - classification fields
-  - writing-support fields
-  - local-file path
-  - evidence-path
-  - warning/status
+## Demo scenario 6: append papers safely
 
-## Suggested talking points
-
-- The skill now supports both standard and survey-oriented workflows.
-- Survey-oriented mode uses one orchestration entry instead of ad hoc manual sequencing.
-- A weak guide sheet can be upgraded into a stronger field manual.
-- Browser fallback is a formal stage in the fetch chain, not a side suggestion.
-- Pilot calibration and field-manual confirmation are hard gates before batch processing.
-- Evidence Markdown is both a traceability layer and a writing-support layer.
+1. Prepare a JSON list with candidate rows.
+2. Run:
+   - `python scripts/cli.py append-papers --workbook ... --rows-json ...`
+3. Confirm:
+   - new papers are appended
+   - duplicate titles or links are skipped
+   - `project/expansion-log.md` records both added and skipped items

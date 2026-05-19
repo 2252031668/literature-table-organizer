@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 import py_compile
-import sys
 from pathlib import Path
 
 
@@ -25,65 +24,48 @@ def main() -> int:
     args = parser.parse_args()
 
     skill_root = Path(args.skill_root).resolve()
-    validator = (
-        Path.home()
-        / ".codex"
-        / "skills"
-        / ".system"
-        / "skill-creator"
-        / "scripts"
-        / "quick_validate.py"
-    )
+    scripts_dir = skill_root / "scripts"
+    references_dir = skill_root / "references"
 
-    if validator.exists():
-        from subprocess import run
-
-        result = run(
-            [sys.executable, str(validator), str(skill_root)],
-            check=False,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-        sys.stdout.write(result.stdout)
-        sys.stderr.write(result.stderr)
-        if result.returncode != 0:
-            print("Note: system validator failed; on Windows this may still reflect a gbk/utf-8 decoding limitation rather than a skill logic failure.")
-
-    for script in sorted((skill_root / "scripts").glob("*.py")):
+    for script in sorted(scripts_dir.rglob("*.py")):
         py_compile.compile(str(script), doraise=True)
 
     required_scripts = [
-        "run_survey_workflow.py",
-        "survey_mode_bootstrap.py",
-        "upgrade_field_manual.py",
-        "prepare_pilot_set.py",
-        "finalize_browser_capture.py",
-        "plan_paper_expansion.py",
-        "append_paper_rows.py",
-        "reset_survey_outputs.py",
-        "rebuild_local_workbook.py",
+        scripts_dir / "cli.py",
+        scripts_dir / "common.py",
+        scripts_dir / "lib" / "project.py",
+        scripts_dir / "lib" / "workbook.py",
+        scripts_dir / "lib" / "pdf_fetcher.py",
+        scripts_dir / "lib" / "link_search.py",
+        scripts_dir / "lib" / "row_contracts.py",
     ]
-    missing_scripts = [name for name in required_scripts if not (skill_root / "scripts" / name).exists()]
-    if missing_scripts:
-        raise FileNotFoundError(f"Missing required scripts: {', '.join(missing_scripts)}")
+    missing = [str(path.relative_to(skill_root)) for path in required_scripts if not path.exists()]
+    if missing:
+        raise FileNotFoundError(f"Missing required scripts: {', '.join(missing)}")
 
     ensure_contains(
         skill_root / "SKILL.md",
-        ["run_survey_workflow.py", "browser_pending", "field manual", "pilot"],
+        ["framework.md", "row-analyze", "read-only", "paper-reports", "writeback-xlsx"],
     )
     ensure_contains(
-        skill_root / "references" / "workflow.md",
-        ["browser_pending", "field-manual", "pilot", "run_survey_workflow.py"],
+        references_dir / "workflow.md",
+        ["framework.md", "row-analyze", "normalize-workbook-headers", "writeback-xlsx"],
     )
     ensure_contains(
-        skill_root / "references" / "usage-demo.md",
-        ["Browser", "run_survey_workflow.py", "pilot"],
+        references_dir / "cli.md",
+        ["init-project", "pdf-download", "pilot-run", "batch-analyze", "append-papers", "reset-project"],
+    )
+    ensure_contains(
+        references_dir / "report-template.md",
+        ["Part A", "Part B", "writing_argument"],
+    )
+    ensure_contains(
+        references_dir / "usage-demo.md",
+        ["row-analyze", "paper-reports", "pilot-run", "batch-analyze", "append-papers", "writeback-xlsx"],
     )
 
     print("Script compilation succeeded.")
-    print("Local survey workflow checks succeeded.")
+    print("Single-workflow survey skill checks succeeded.")
     return 0
 
 

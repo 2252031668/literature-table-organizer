@@ -1,185 +1,133 @@
 ---
 name: literature-table-organizer
-description: "Organize a literature workbook into either a standard evidence-backed review table or a survey-oriented classification and writing-support workspace. Use when a user provides a local xlsx file or Feishu spreadsheet and wants paper verification, field backfill, survey taxonomy alignment, writing-outline support, evidence files, workbook path columns, or incremental paper expansion."
+description: "Use for survey-oriented literature analysis from topic + local xlsx + local PDFs. This skill supports a single workflow for early-stage survey writing: build a framework, analyze papers one by one from PDF, generate paper reports and row-analysis JSON, normalize workbook headers when needed, and write back curated results to the workbook."
 ---
 
 # Literature Table Organizer
 
-Use this skill in one of two modes:
+This skill now supports one workflow only:
 
-1. Standard mode
-   For normal literature-table verification, evidence collection, and workbook backfill.
-2. Survey-oriented mode
-   For preparing a new survey paper from `topic + xlsx + optional draft source`, including related-survey analysis, outline drafting, field-manual upgrade, pilot calibration, writing-support columns, Browser-enforced fallback, and iterative paper expansion.
+- survey-oriented literature analysis for new review or survey writing
 
-Start with `references/workflow.md` before doing substantial work.
+It does not target ordinary literature-table cleanup anymore.
 
-## Mode selection
+## Read-only skill rule
 
-Use survey-oriented mode when any of the following is true:
+During normal use:
 
-- the user says the workbook is for writing a survey or review article
-- the user provides a survey topic
-- the user asks for breakthrough-point analysis, writing outline, writing-section mapping, or writing-ready evidence
+- do not edit project files inside `C:\Users\27216\.codex\skills\literature-table-organizer`
+- do not ask the user to edit files inside the skill directory
+- treat the skill directory as read-only tooling and instructions
 
-Otherwise use standard mode.
+All editable project outputs must live in the workspace next to the workbook:
 
-## Standard mode
+- `project/framework.md`
+- `paper-reports/*.md`
+- `row-analysis/*.json`
+- workbook working copy
 
-Standard mode keeps the existing behavior:
+Read [references/workflow.md](references/workflow.md) first.
 
-1. Detect workbook structure.
-2. Prepare the local editable workspace.
-3. Fetch paper evidence with PDF/fulltext-first policy.
-4. Build evidence files.
-5. Write workbook updates and local hyperlinks.
-6. Preview Feishu sync only when needed.
+## Core idea
 
-## Survey-oriented mode
+The workflow is driven by one single source of truth:
 
-Survey-oriented mode is now driven through one orchestration entry:
+- `project/framework.md`
 
-- `scripts/run_survey_workflow.py`
+That file should contain:
 
-Required survey flow:
+- survey context
+- compact outline
+- classification rules
+- reading-report template
+- workbook writeback mapping
 
-1. Topic and project alignment
-2. Related-survey and representative-paper reading
-3. Breakthrough-point analysis
-4. Outline drafting and discussion
-5. Field-manual upgrade and field-gap analysis
-6. Pilot calibration on 5-10 representative papers
-7. Only after field-manual confirmation and pilot confirmation, batch processing
-8. Ongoing paper expansion and reprocessing
+The main paper-level action is:
 
-Do not skip directly to full-table processing in survey-oriented mode.
+- `python scripts/cli.py row-analyze --workbook ... --row ... --pdf ...`
 
-## Required survey-oriented outputs
+That action should produce:
 
-Create these project files under `<workbook_stem>_artifacts/project/`:
+- `paper-reports/<row>-<slug>.md`
+- `row-analysis/<row>-<slug>.json`
 
-- `project-brief.md`
-- `related-survey-analysis.md`
-- `outline.md`
-- `field-manual.md`
-- `field-gap-analysis.md`
-- `pilot-calibration.md`
-- `paper-expansion-log.md`
-- `workflow-state.json`
+## Preferred workflow
 
-`outline.md` is the central writing scaffold.
+1. Initialize a survey project.
+2. Build or revise `project/framework.md`.
+3. Normalize workbook headers if Chinese header handling is unstable.
+4. Download or prepare local PDFs.
+5. Analyze representative rows first.
+6. Run pilot discussion and revise `framework.md`.
+7. Analyze more rows.
+8. Write back curated results to the workbook.
 
-## Workbook behavior
+## CLI entry
 
-Always maintain:
+Use a single CLI entry:
 
-- `本地文件路径`
-- `证据链路径`
-- `核验警告/状态`
+- `python scripts/cli.py <subcommand>`
 
-In survey-oriented mode also maintain:
+Main commands:
 
-- `写作引用章节`
-- `引用论据`
+- `init-project`
+- `build-framework`
+- `normalize-workbook-headers`
+- `row-analyze`
+- `writeback-xlsx`
 
-For local `.xlsx` workbooks, keep relative path text while also writing clickable local hyperlinks.
+Additional commands are reserved for the same workflow:
 
-## Field-guide policy
+- `find-paper-link`
+- `pdf-download`
+- `pilot-run`
+- `batch-analyze`
+- `append-papers`
+- `reset-project`
 
-Treat the workbook field-guide sheet as a lightweight input, not necessarily the final classification protocol.
+## Row analysis contract
 
-In survey-oriented mode:
+`row-analyze` is the core capability.
 
-- a simple three-column guide is considered legacy input
-- the skill must upgrade it into `field-manual.md`
-- `field-manual.md` is the authoritative decision layer
-- batch processing is blocked until the field manual is confirmed
+Inputs:
 
-Do not treat a weak field-guide sheet as sufficient for high-confidence survey classification.
+- `framework.md`
+- workbook row metadata
+- local `paper.pdf`
 
-## Classification protocol
+Outputs:
 
-Survey-oriented outputs must go beyond value filling.
+- a Markdown paper report with two fixed halves
+- a minimal JSON file for workbook writeback
 
-For major classification fields, the evidence output should record:
+The report must use:
 
-- decision question
-- final value
-- key evidence segments
-- causal reasoning chain
-- exclusion reasoning
-- evidence sufficiency
-- writing section
-- writing argument when evidence is strong enough
+- Part A: Chinese reading notes
+- Part B: English field decisions using stable English field keys
 
-Detailed reasoning belongs primarily in evidence Markdown and project files, not only in workbook cells.
+Do not treat abstract-only text as sufficient for high-confidence classification.
 
-## Browser fallback rule
+## Workbook strategy
 
-Browser is part of the formal fetch chain, not an optional suggestion.
+Internally, use English canonical keys only.
 
-- Static success may produce:
-  - `pdf_download`
-  - `fulltext_web`
-  - `secondary_review`
-  - `abstract_only`
-- Static failure that still looks recoverable must produce:
-  - `browser_pending`
-- After Browser capture is completed, the result should be finalized into:
-  - `pdf_via_browser`
-  - `fulltext_web`
-  - `secondary_review`
-  - `mismatch_or_unverifiable`
+Externally:
 
-The agent using this skill must treat `browser_pending` as an immediate action item and resume the same evidence pipeline after capture.
+- Chinese headers may be preserved through explicit mapping
+- if header handling becomes unstable, use `normalize-workbook-headers` to create an English-header workbook copy
 
-## Paper expansion
+`writeback-xlsx` should only consume existing `row-analysis/*.json`.
+It should not re-infer fields on its own.
 
-Survey-oriented mode must support incremental paper expansion:
-
-1. search for additional papers on a requested aspect
-2. present candidate papers and rationale
-3. wait for user confirmation
-4. append confirmed papers as new workbook rows
-5. run the same evidence and writing-support workflow on those rows
-
-## Evidence order
-
-Evidence priority is mandatory:
-
-1. `paper.pdf` or other local full paper text
-2. official readable fulltext webpage
-3. project page / OpenReview / repository documentation with enough detail
-4. high-quality secondary review or interpretation page
-5. abstract-only page
-
-Abstract-only pages are never the default basis for complete survey-oriented backfill.
-
-## Files to use
+## Files to read
 
 - `references/workflow.md`
-- `references/fieldguide-contract.md`
-- `references/evidence-template.md`
-- `references/usage-demo.md`
-- `scripts/detect_workbook_structure.py`
-- `scripts/prepare_local_workspace.py`
-- `scripts/run_survey_workflow.py`
-- `scripts/survey_mode_bootstrap.py`
-- `scripts/upgrade_field_manual.py`
-- `scripts/prepare_pilot_set.py`
-- `scripts/fetch_paper_sources.py`
-- `scripts/finalize_browser_capture.py`
-- `scripts/build_evidence_files.py`
-- `scripts/update_workbook.py`
-- `scripts/append_paper_rows.py`
-- `scripts/plan_paper_expansion.py`
-- `scripts/reset_survey_outputs.py`
-- `scripts/rebuild_local_workbook.py`
-- `scripts/quick_validate.py`
+- `references/cli.md`
+- `references/report-template.md`
 
 ## Notes
 
-- In survey-oriented mode, do not guess the survey taxonomy before reading related surveys and discussing the outline.
-- Do not enter batch processing until both the field manual and pilot are confirmed.
-- Writing-support fields should be concrete enough to support drafting, not generic summaries.
-- If Browser capture is still pending, treat that row as blocked rather than silently degrading it into normal batch output.
+- Prefer local `.xlsx` as the main workbook surface.
+- Feishu can still be used as an optional draft source, not as the main execution surface.
+- File names for new project artifacts should stay in English to avoid Windows and terminal path issues.
+- The skill may help generate templates and stable contracts, but actual high-quality classification depends on directly reading the PDF.

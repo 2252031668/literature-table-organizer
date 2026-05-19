@@ -1,263 +1,167 @@
-# Literature Table Organizer
+# literature-table-organizer v3.0
 
-A Codex skill for turning a literature workbook into either:
+`literature-table-organizer` is a Codex skill for the front half of survey writing.
 
-- a standard evidence-backed review table
-- a survey-oriented classification and writing-support workspace
+It is now released as a **single-workflow survey tool** built around:
+
+- a survey topic
+- a local workbook
+- local paper PDFs
+- optional draft context
 
 Chinese documentation: [README.zh-CN.md](README.zh-CN.md)
 
-## What Changed in This Version
+## What v3.0 Is
 
-The skill is now designed to support the **front half of survey production** more directly:
+v3.0 removes the old mixed workflow design and keeps one clear path only:
 
-- one orchestration entry for survey-oriented workflow
-- stronger project-level survey analysis outputs
-- field-manual and pilot gating before batch processing
-- Browser fallback as a formal fetch-stage state instead of an informal suggestion
-- richer evidence decision chains and writing-support fields
+- initialize a survey project
+- build `project/framework.md`
+- read papers row by row from local PDFs
+- produce paper reports and row-analysis JSON
+- write curated results back to the workbook
 
-This version still does **not** auto-write a full survey paper draft. It focuses on topic alignment, classification, evidence, writing support, and ongoing literature expansion.
+This version is designed for:
 
-## Two Modes
+- survey-oriented literature analysis
+- classification calibration
+- evidence-backed note taking
+- workbook writeback for later writing
 
-### 1. Standard mode
+It is not a full survey-drafting system.
 
-Use this when you want to:
+## Core Architecture
 
-- verify papers in an existing workbook
-- collect stronger evidence
-- fill user-defined fields
-- maintain local traceability files
-- write clickable local paths back into `.xlsx`
+The workflow is driven by one single protocol file:
 
-### 2. Survey-oriented mode
+- `project/framework.md`
 
-Use this when the workbook is part of preparing a new survey or review paper.
+That file is the sole rule source for:
 
-This mode takes:
+- survey context
+- compact outline
+- classification rules
+- reading report structure
+- workbook mapping
 
-- a survey topic
-- a literature workbook
-- and optionally a draft source such as a Feishu wiki, local Markdown file, or local `.docx`
+The main output contracts are:
 
-Survey-oriented mode is now driven through:
+- `paper-reports/<row>-<slug>.md`
+- `row-analysis/<row>-<slug>.json`
 
-- `scripts/run_survey_workflow.py`
+The workbook is written back only from JSON.
 
-Its main phases are:
+## Main Workflow
 
-1. bootstrap
-2. manual
-3. pilot
-4. batch
-5. expansion
+1. Run `init-project` to create the workspace project scaffold.
+2. Use `build-framework` and revise `project/framework.md`.
+3. Normalize workbook headers if needed.
+4. Prepare local `paper.pdf` files.
+5. Run `row-analyze` on representative papers first.
+6. Use `pilot-run` to organize pilot calibration.
+7. Use `batch-analyze` to generate a larger review queue.
+8. Use `writeback-xlsx` to write curated fields back to the workbook.
 
-## What the Skill Solves
+## CLI
 
-Many literature tables stop at filled values and do not preserve:
+Use one entry only:
 
-- why a paper was classified that way
-- what evidence actually supports the classification
-- which survey section the paper contributes to
-- how to extend the table when a new writing gap appears
+```bash
+python scripts/cli.py <subcommand>
+```
 
-This skill turns the workbook into a reusable workspace with:
+Main commands:
 
-- local source artifacts
-- per-paper evidence Markdown
-- manifest state
-- project-level survey files
-- workbook hyperlinks and writing-support columns
+- `init-project`
+- `build-framework`
+- `normalize-workbook-headers`
+- `find-paper-link`
+- `pdf-download`
+- `row-analyze`
+- `pilot-run`
+- `batch-analyze`
+- `append-papers`
+- `writeback-xlsx`
+- `reset-project`
 
-## Survey-Oriented Project Files
+## Paper Reports and JSON
 
-In survey-oriented mode, the skill creates:
+`row-analyze` is the core paper-level action.
 
-- `<workbook_stem>_artifacts/project/project-brief.md`
-- `<workbook_stem>_artifacts/project/related-survey-analysis.md`
-- `<workbook_stem>_artifacts/project/outline.md`
-- `<workbook_stem>_artifacts/project/field-manual.md`
-- `<workbook_stem>_artifacts/project/field-gap-analysis.md`
-- `<workbook_stem>_artifacts/project/pilot-calibration.md`
-- `<workbook_stem>_artifacts/project/paper-expansion-log.md`
-- `<workbook_stem>_artifacts/project/workflow-state.json`
+Inputs:
 
-`outline.md` is the central writing scaffold.
+- `project/framework.md`
+- workbook row metadata
+- local `paper.pdf`
 
-## Workbook Columns
+Outputs:
 
-The skill always maintains:
+- a paper report in Markdown
+- a row-analysis JSON file
 
-- `本地文件路径`
-- `证据链路径`
-- `核验警告/状态`
+The report format is fixed:
 
-In survey-oriented mode it also maintains:
+- Part A: Chinese reading notes
+- Part B: English field decisions
 
-- `写作引用章节`
-- `引用论据`
+This makes the report readable for human review while keeping downstream JSON extraction stable.
 
-For local `.xlsx`, path cells remain human-readable relative paths and are also written as clickable hyperlinks.
+## Workbook Header Strategy
 
-## Evidence Policy
+Internally, the skill uses English canonical keys only.
 
-### Priority Order
+Workbook-facing behavior:
 
-1. local full paper text such as `paper.pdf`
-2. official readable fulltext webpage
-3. project page, OpenReview page, or repository documentation with enough detail
-4. high-quality secondary review page
-5. abstract-only page
+- preserve existing Chinese headers when possible
+- optionally normalize supported headers into English
 
-### Status Values
+Use:
 
-- `pdf_download`
-- `pdf_via_browser`
-- `fulltext_web`
-- `secondary_review`
-- `abstract_only`
-- `browser_pending`
-- `unresolved`
-- `mismatch_or_unverifiable`
+```bash
+python scripts/cli.py normalize-workbook-headers --workbook ...
+```
 
-### Full Backfill Rule
+when the current environment handles Chinese headers unreliably.
 
-Full backfill is allowed only for:
+## `append-papers` in v3.0
 
-- `pdf_download`
-- `pdf_via_browser`
-- `fulltext_web`
-- `secondary_review`
+`append-papers` now acts as a safe row insertion command.
 
-Abstract-only evidence is not the default basis for complete survey-oriented classification.
+Behavior:
 
-Rows that remain `browser_pending`, `unresolved`, or `mismatch_or_unverifiable` should not be treated as writing-ready.
+- detect duplicates by normalized title or normalized link
+- skip duplicates instead of failing the whole batch
+- return both `added_rows` and `skipped_rows`
+- record both added and skipped entries in `project/expansion-log.md`
 
-## Browser Fallback
+It only appends basic row metadata and optional writing fields.
+It does not classify papers automatically.
 
-Browser fallback is now part of the formal fetch chain.
+## PDF and Download Policy
 
-When static fetching cannot reach the real paper asset:
+The formal reading input is local PDF only:
 
-1. the fetch script returns `browser_pending`
-2. the agent using the skill is expected to complete Browser capture immediately
-3. the capture is finalized back into the same row asset directory
-4. the evidence and workbook pipeline resumes
+- `papers/<row>-<slug>/paper.pdf`
 
-Important limitation:
+`pdf-download` performs static PDF resolution only.
 
-- Browser is not directly called from Python
-- the skill relies on the agent using Browser and then returning the result through the provided finalization step
+It can help with:
 
-So Browser fallback is **agent-enforced and structured**, not a fully autonomous browser subprocess inside Python.
+- arXiv links
+- direct PDF links
+- common paper-page PDF extraction
 
-## Field Guide vs Field Manual
+If static download fails, manual follow-up is still required.
+v3.0 does not advertise the old Browser fallback chain as part of the main workflow anymore.
 
-The workbook may still contain a lightweight guide sheet with:
+## Demo and Validation
 
-- field name
-- fill guidance
-- recommended values
-
-That is treated as a legacy input.
-
-In survey-oriented mode, the skill upgrades it into `field-manual.md`, which should express:
-
-- field purpose
-- writing section served
-- decision question
-- positive triggers
-- confusing neighbors
-- required evidence
-- conservative fallback rule
-- neighboring-category exclusion rule
-- writing-use note
-
-Batch survey-oriented processing should not proceed until the upgraded field manual is discussed and confirmed.
-
-## Pilot Gating
-
-Survey-oriented mode uses pilot calibration as a hard gate.
-
-Before batch processing, the workflow expects:
-
-- a prepared pilot set
-- a sufficient sample count
-- at least one learned rule recorded
-- pilot confirmation reflected in workflow state
-
-If those checks fail, batch processing should stop.
-
-## Classification Protocol
-
-The skill no longer treats classification as only fill a value.
-
-For major fields, evidence Markdown should capture:
-
-- decision question
-- final value
-- key evidence segments
-- causal reasoning chain
-- exclusion reasoning
-- evidence sufficiency
-- writing section
-- writing argument when evidence is strong enough
-
-This is especially important in survey-oriented mode, where `引用论据` should be writing-ready rather than generic.
-
-## Incremental Paper Expansion
-
-Survey-oriented mode supports expanding the workbook when a section or topic is under-covered.
-
-Default flow:
-
-1. search for candidate papers
-2. explain why they are relevant
-3. wait for user confirmation
-4. append them as new workbook rows
-5. process the new rows with the same evidence and writing-support workflow
-6. record the addition in `paper-expansion-log.md`
-
-## Repository Layout
-
-- `SKILL.md`
-  Codex-facing skill instructions
-- `scripts/`
-  detection, orchestration, fetch, Browser finalization, pilot prep, expansion planning, evidence, workbook updates, rebuild, reset, and validation
-- `references/`
-  workflow, field-guide contract, evidence template, and usage examples
-- `assets/demo/`
-  demo workbook and demo manifest
-
-## Main Scripts
-
-- `scripts/run_survey_workflow.py`
-- `scripts/detect_workbook_structure.py`
-- `scripts/prepare_local_workspace.py`
-- `scripts/survey_mode_bootstrap.py`
-- `scripts/upgrade_field_manual.py`
-- `scripts/prepare_pilot_set.py`
-- `scripts/fetch_paper_sources.py`
-- `scripts/finalize_browser_capture.py`
-- `scripts/build_evidence_files.py`
-- `scripts/update_workbook.py`
-- `scripts/append_paper_rows.py`
-- `scripts/plan_paper_expansion.py`
-- `scripts/reset_survey_outputs.py`
-- `scripts/rebuild_local_workbook.py`
-- `scripts/quick_validate.py`
-
-## Demo
-
-The repository includes:
+Bundled demo assets:
 
 - `assets/demo/literature-demo.xlsx`
 - `assets/demo/demo-manifest.json`
 
-The demo now shows both standard and survey-oriented workflow expectations, including writing-support columns and pilot gating.
-
-## Validate the Skill
+Validation:
 
 ```bash
 python scripts/quick_validate.py
@@ -265,7 +169,6 @@ python scripts/quick_validate.py
 
 ## Known Limits
 
-- The bundled system-level skill validator on some Windows setups may still hit local encoding issues when reading UTF-8 Markdown through a non-UTF-8 default code page.
-- Browser fallback is structured and required, but still depends on the agent performing browser actions rather than a Python-only automation layer.
-- Writing-ready arguments are stronger than before, but the highest-quality survey use still benefits from real per-paper calibration on representative samples.
-- The skill supports the front half of survey production, not full article drafting.
+- The CLI does not automatically understand PDF content; `row-analyze` is an agent-led reading workflow.
+- The best results still depend on careful framework discussion and representative pilot calibration.
+- The skill is for the front half of survey production, not for generating a full survey manuscript draft.
